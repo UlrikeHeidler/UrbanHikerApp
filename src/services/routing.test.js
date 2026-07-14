@@ -62,15 +62,50 @@ describe('fetchRoute — unit', () => {
     expect(fetch.mock.calls[0][0]).toContain('foot-walking')
   })
 
+  it('requests alternative routes when there are no waypoints', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchRoute(START, END)
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.alternative_routes).toBeDefined()
+    expect(body.alternative_routes.target_count).toBeGreaterThan(1)
+  })
+
+  it('omits alternative_routes when waypoints are present', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchRoute(START, END, { waypoints: [{ lat: 52.525, lng: 13.41 }] })
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.alternative_routes).toBeUndefined()
+  })
+
+  it('returns an array of RouteResults', async () => {
+    mockFetch(200, makeOrsResponse())
+    const results = await fetchRoute(START, END)
+    expect(Array.isArray(results)).toBe(true)
+    expect(results.length).toBeGreaterThan(0)
+  })
+
+  it('returns all features when ORS provides multiple alternatives', async () => {
+    const multi = {
+      features: [
+        makeOrsResponse({ distance: 1500 }).features[0],
+        makeOrsResponse({ distance: 1800 }).features[0],
+      ],
+    }
+    mockFetch(200, multi)
+    const results = await fetchRoute(START, END)
+    expect(results).toHaveLength(2)
+    expect(results[1].info.distance).toBe(1800)
+  })
+
   it('converts ORS [lng, lat] coordinates to [lat, lng] for Leaflet', async () => {
     mockFetch(200, makeOrsResponse())
-    const result = await fetchRoute(START, END)
+    const [result] = await fetchRoute(START, END)
     expect(result.coordinates[0]).toEqual([52.52, 13.405])
   })
 
   it('includes an elevationProfile array in the result', async () => {
     mockFetch(200, makeOrsResponse())
-    const result = await fetchRoute(START, END)
+    const [result] = await fetchRoute(START, END)
     expect(Array.isArray(result.elevationProfile)).toBe(true)
     expect(result.elevationProfile.length).toBe(3)
     expect(result.elevationProfile[0]).toMatchObject({ distanceM: 0, elevationM: 34 })
@@ -78,14 +113,14 @@ describe('fetchRoute — unit', () => {
 
   it('returns correct distance and duration', async () => {
     mockFetch(200, makeOrsResponse({ distance: 2000, duration: 1440 }))
-    const result = await fetchRoute(START, END)
+    const [result] = await fetchRoute(START, END)
     expect(result.info.distance).toBe(2000)
     expect(result.info.duration).toBe(1440)
   })
 
   it('returns ascent and descent when present', async () => {
     mockFetch(200, makeOrsResponse({ ascent: 30, descent: 25 }))
-    const result = await fetchRoute(START, END)
+    const [result] = await fetchRoute(START, END)
     expect(result.info.ascent).toBe(30)
     expect(result.info.descent).toBe(25)
   })
@@ -95,9 +130,47 @@ describe('fetchRoute — unit', () => {
     delete response.features[0].properties.ascent
     delete response.features[0].properties.descent
     mockFetch(200, response)
-    const result = await fetchRoute(START, END)
+    const [result] = await fetchRoute(START, END)
     expect(result.info.ascent).toBeNull()
     expect(result.info.descent).toBeNull()
+  })
+
+  it('inserts waypoints between start and end in the coordinates array', async () => {
+    mockFetch(200, makeOrsResponse())
+    const wp = { lat: 52.525, lng: 13.41 }
+    await fetchRoute(START, END, { waypoints: [wp] })
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.coordinates).toHaveLength(3)
+    expect(body.coordinates[1]).toEqual([wp.lng, wp.lat])
+  })
+
+  it('nests profile_params inside options (not top-level) for A-to-B routes', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchRoute(START, END, { preferences: { green: 0.5 } })
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.profile_params).toBeUndefined()
+    expect(body.options.profile_params.weightings.green).toBe(0.5)
+  })
+
+  it('includes quiet weighting inside options.profile_params', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchRoute(START, END, { preferences: { quiet: 0.3 } })
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.options.profile_params.weightings.quiet).toBe(0.3)
+  })
+
+  it('omits options entirely when no preferences are set', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchRoute(START, END, {})
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.options).toBeUndefined()
+  })
+
+  it('omits options when preferences are all zero', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchRoute(START, END, { preferences: { green: 0, quiet: 0 } })
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.options).toBeUndefined()
   })
 
   it('throws with the ORS error message on API error', async () => {
@@ -149,51 +222,6 @@ describe('fetchRoute — security', () => {
     const startCopy = { ...START }
     await fetchRoute(START, END)
     expect(START).toEqual(startCopy)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// fetchRoute — waypoints + preferences
-// ---------------------------------------------------------------------------
-
-describe('fetchRoute — waypoints and preferences', () => {
-  beforeEach(() => { setApiKey('test-api-key') })
-
-  it('inserts waypoints between start and end in the coordinates array', async () => {
-    mockFetch(200, makeOrsResponse())
-    const wp = { lat: 52.525, lng: 13.41 }
-    await fetchRoute(START, END, { waypoints: [wp] })
-    const body = JSON.parse(fetch.mock.calls[0][1].body)
-    expect(body.coordinates).toHaveLength(3)
-    expect(body.coordinates[1]).toEqual([wp.lng, wp.lat])
-  })
-
-  it('omits profile_params when preferences are all zero', async () => {
-    mockFetch(200, makeOrsResponse())
-    await fetchRoute(START, END, { preferences: { green: 0, quiet: 0 } })
-    const body = JSON.parse(fetch.mock.calls[0][1].body)
-    expect(body.profile_params).toBeUndefined()
-  })
-
-  it('includes green weighting when set above zero', async () => {
-    mockFetch(200, makeOrsResponse())
-    await fetchRoute(START, END, { preferences: { green: 0.5 } })
-    const body = JSON.parse(fetch.mock.calls[0][1].body)
-    expect(body.profile_params.weightings.green).toBe(0.5)
-  })
-
-  it('includes quiet weighting when set above zero', async () => {
-    mockFetch(200, makeOrsResponse())
-    await fetchRoute(START, END, { preferences: { quiet: 0.3 } })
-    const body = JSON.parse(fetch.mock.calls[0][1].body)
-    expect(body.profile_params.weightings.quiet).toBe(0.3)
-  })
-
-  it('omits profile_params entirely when options object is empty', async () => {
-    mockFetch(200, makeOrsResponse())
-    await fetchRoute(START, END, {})
-    const body = JSON.parse(fetch.mock.calls[0][1].body)
-    expect(body.profile_params).toBeUndefined()
   })
 })
 

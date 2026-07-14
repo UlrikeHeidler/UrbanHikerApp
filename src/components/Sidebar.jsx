@@ -5,9 +5,12 @@ import LoopControls from './LoopControls'
 import RoutePreferences from './RoutePreferences'
 import WaypointList from './WaypointList'
 import RouteResultPanel from './RouteResultPanel'
+import RouteAlternatives from './RouteAlternatives'
+import DetourControls from './DetourControls'
 import SavedRoutes from './SavedRoutes'
 import ApiKeySettings from './ApiKeySettings'
 import { fetchRoute, fetchLoopRoute } from '../services/routing'
+import { computeDetourWaypoint } from '../utils/detour'
 import './Sidebar.css'
 
 const DEFAULT_LOOP_METERS = 5000
@@ -20,17 +23,22 @@ const DEFAULT_LOOP_METERS = 5000
  */
 export default function Sidebar({
   mode, onModeChange,
-  startPoint, endPoint, waypoints, onRemoveWaypoint,
+  startPoint, endPoint, startLabel, endLabel, waypoints, onRemoveWaypoint,
   activePin, setActivePin, onSetPoint, onClear,
   preferences, onPreferencesChange,
   route, setRoute, routeInfo, setRouteInfo,
   elevationProfile, setElevationProfile,
+  routeAlternatives, setRouteAlternatives,
+  selectedRouteIndex, setSelectedRouteIndex, onSelectRoute,
+  setDetourWaypoint,
   isLoading, setIsLoading, error, setError,
   savedRoutes, onSaveRoute, onLoadRoute, onDeleteRoute,
   poisEnabled, onTogglePoi, onLoadPois, poisLoading,
 }) {
-  const [loopMeters, setLoopMeters] = useState(DEFAULT_LOOP_METERS)
-  const [loopSeed, setLoopSeed]     = useState(0)
+  const [loopMeters, setLoopMeters]   = useState(DEFAULT_LOOP_METERS)
+  const [loopSeed, setLoopSeed]       = useState(0)
+  const [detourMeters, setDetourMeters] = useState(0)
+  const [detourFlip, setDetourFlip]   = useState(false)
 
   const canRoute = mode === 'loop'
     ? Boolean(startPoint) && loopMeters > 0
@@ -42,12 +50,24 @@ export default function Sidebar({
     setError(null)
     try {
       const opts = { preferences }
-      const result = mode === 'loop'
-        ? await fetchLoopRoute(startPoint, loopMeters, loopSeed, opts)
-        : await fetchRoute(startPoint, endPoint, { ...opts, waypoints })
-      setRoute(result.coordinates)
-      setRouteInfo(result.info)
-      setElevationProfile(result.elevationProfile)
+      if (mode === 'loop') {
+        const result = await fetchLoopRoute(startPoint, loopMeters, loopSeed, opts)
+        setRouteAlternatives([])
+        setSelectedRouteIndex(0)
+        setRoute(result.coordinates)
+        setRouteInfo(result.info)
+        setElevationProfile(result.elevationProfile)
+      } else {
+        const detourWp = computeDetourWaypoint(startPoint, endPoint, detourMeters, detourFlip)
+        setDetourWaypoint(detourWp)
+        const allWaypoints = detourWp ? [detourWp, ...waypoints] : waypoints
+        const results = await fetchRoute(startPoint, endPoint, { ...opts, waypoints: allWaypoints })
+        setRouteAlternatives(results)
+        setSelectedRouteIndex(0)
+        setRoute(results[0].coordinates)
+        setRouteInfo(results[0].info)
+        setElevationProfile(results[0].elevationProfile)
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -75,7 +95,11 @@ export default function Sidebar({
             {mode === 'loop' && <span className="pin-label"><span className="pin-dot start-dot" /> Start / return</span>}
             <AddressSearch placeholder="Search start address…" onSelect={(ll) => { onSetPoint('start', ll); setActivePin('end') }} />
           </div>
-          {startPoint && <div className="coord-label">{startPoint.lat.toFixed(5)}, {startPoint.lng.toFixed(5)}</div>}
+          {startPoint && (
+            <div className="coord-label">
+              {startLabel ?? `${startPoint.lat.toFixed(5)}, ${startPoint.lng.toFixed(5)}`}
+            </div>
+          )}
         </section>
 
         {mode === 'a-to-b' && (
@@ -87,7 +111,11 @@ export default function Sidebar({
                 </button>
                 <AddressSearch placeholder="Search end address…" onSelect={(ll) => { onSetPoint('end', ll); setActivePin('start') }} />
               </div>
-              {endPoint && <div className="coord-label">{endPoint.lat.toFixed(5)}, {endPoint.lng.toFixed(5)}</div>}
+              {endPoint && (
+                <div className="coord-label">
+                  {endLabel ?? `${endPoint.lat.toFixed(5)}, ${endPoint.lng.toFixed(5)}`}
+                </div>
+              )}
             </section>
 
             <WaypointList
@@ -95,6 +123,13 @@ export default function Sidebar({
               isAdding={activePin === 'waypoint'}
               onStartAdd={() => setActivePin('waypoint')}
               onRemove={onRemoveWaypoint}
+            />
+
+            <DetourControls
+              detourMeters={detourMeters}
+              onMetersChange={setDetourMeters}
+              flip={detourFlip}
+              onFlipChange={setDetourFlip}
             />
           </>
         )}
@@ -113,6 +148,12 @@ export default function Sidebar({
         </div>
 
         {error && <div className="error-box">{error}</div>}
+
+        <RouteAlternatives
+          alternatives={routeAlternatives}
+          selectedIndex={selectedRouteIndex}
+          onSelect={onSelectRoute}
+        />
 
         {routeInfo && (
           <RouteResultPanel

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import MapView from './components/MapView'
 import Sidebar from './components/Sidebar'
 import { loadRoutes, saveRoute, deleteRoute } from './services/storage'
+import { reverseGeocode } from './services/geocoding'
 import { fetchPois } from './services/overpass'
 import { getBoundingBox } from './utils/geo'
 import './App.css'
@@ -26,6 +27,11 @@ export default function App() {
   const [route, setRoute]                       = useState(null)
   const [routeInfo, setRouteInfo]               = useState(null)
   const [elevationProfile, setElevationProfile] = useState(null)
+  const [routeAlternatives, setRouteAlternatives] = useState([])
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0)
+  const [detourWaypoint, setDetourWaypoint] = useState(null)
+  const [startLabel, setStartLabel] = useState(null)
+  const [endLabel, setEndLabel]     = useState(null)
   const [isLoading, setIsLoading]               = useState(false)
   const [error, setError]                       = useState(null)
   const [savedRoutes, setSavedRoutes]           = useState(() => loadRoutes())
@@ -33,12 +39,30 @@ export default function App() {
   const [poisEnabled, setPoisEnabled]           = useState(DEFAULT_POI_ENABLED)
   const [poisLoading, setPoisLoading]           = useState(false)
 
+  async function resolveLabel(latlng, setLabel) {
+    setLabel(null)
+    const label = await reverseGeocode(latlng.lat, latlng.lng)
+    if (label) setLabel(label)
+  }
+
   function clearRoute() {
     setRoute(null)
     setRouteInfo(null)
     setElevationProfile(null)
     setError(null)
     setPois(DEFAULT_POIS)
+    setRouteAlternatives([])
+    setSelectedRouteIndex(0)
+    setDetourWaypoint(null)
+  }
+
+  function handleSelectRoute(index) {
+    const alt = routeAlternatives[index]
+    if (!alt) return
+    setSelectedRouteIndex(index)
+    setRoute(alt.coordinates)
+    setRouteInfo(alt.info)
+    setElevationProfile(alt.elevationProfile)
   }
 
   function handleMapClick(latlng) {
@@ -49,19 +73,22 @@ export default function App() {
     }
     if (mode === 'loop') {
       setStartPoint(latlng)
+      resolveLabel(latlng, setStartLabel)
     } else if (activePin === 'start') {
       setStartPoint(latlng)
+      resolveLabel(latlng, setStartLabel)
       setActivePin('end')
     } else {
       setEndPoint(latlng)
+      resolveLabel(latlng, setEndLabel)
       setActivePin('start')
     }
     clearRoute()
   }
 
   function handleSetPoint(type, latlng) {
-    if (type === 'start') setStartPoint(latlng)
-    else setEndPoint(latlng)
+    if (type === 'start') { setStartPoint(latlng); resolveLabel(latlng, setStartLabel) }
+    else                  { setEndPoint(latlng);   resolveLabel(latlng, setEndLabel) }
     clearRoute()
   }
 
@@ -69,6 +96,8 @@ export default function App() {
     setMode(newMode)
     setStartPoint(null)
     setEndPoint(null)
+    setStartLabel(null)
+    setEndLabel(null)
     setWaypoints([])
     setActivePin('start')
     clearRoute()
@@ -77,6 +106,8 @@ export default function App() {
   function handleClear() {
     setStartPoint(null)
     setEndPoint(null)
+    setStartLabel(null)
+    setEndLabel(null)
     setWaypoints([])
     setActivePin('start')
     clearRoute()
@@ -107,6 +138,13 @@ export default function App() {
     setError(null)
     setActivePin('start')
     setPois(DEFAULT_POIS)
+    setRouteAlternatives([])
+    setSelectedRouteIndex(0)
+    // Re-resolve labels for the loaded points
+    if (saved.startPoint) resolveLabel(saved.startPoint, setStartLabel)
+    else setStartLabel(null)
+    if (saved.endPoint) resolveLabel(saved.endPoint, setEndLabel)
+    else setEndLabel(null)
   }
 
   function handleDeleteRoute(id) {
@@ -137,6 +175,7 @@ export default function App() {
       <Sidebar
         mode={mode} onModeChange={handleModeChange}
         startPoint={startPoint} endPoint={endPoint}
+        startLabel={startLabel} endLabel={endLabel}
         waypoints={waypoints} onRemoveWaypoint={handleRemoveWaypoint}
         activePin={activePin} setActivePin={setActivePin}
         onSetPoint={handleSetPoint} onClear={handleClear}
@@ -144,6 +183,10 @@ export default function App() {
         route={route} setRoute={setRoute}
         routeInfo={routeInfo} setRouteInfo={setRouteInfo}
         elevationProfile={elevationProfile} setElevationProfile={setElevationProfile}
+        routeAlternatives={routeAlternatives} setRouteAlternatives={setRouteAlternatives}
+        selectedRouteIndex={selectedRouteIndex} setSelectedRouteIndex={setSelectedRouteIndex}
+        onSelectRoute={handleSelectRoute}
+        setDetourWaypoint={setDetourWaypoint}
         isLoading={isLoading} setIsLoading={setIsLoading}
         error={error} setError={setError}
         savedRoutes={savedRoutes}
@@ -155,6 +198,8 @@ export default function App() {
         startPoint={startPoint} endPoint={endPoint}
         route={route} mode={mode}
         activePin={activePin} waypoints={waypoints}
+        altRoutes={routeAlternatives.filter((_, i) => i !== selectedRouteIndex).map(r => r.coordinates)}
+        detourWaypoint={detourWaypoint}
         pois={pois} poisEnabled={poisEnabled}
         onMapClick={handleMapClick}
       />

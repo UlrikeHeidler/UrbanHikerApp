@@ -4,7 +4,8 @@ A personal web app for planning walking routes in cities — find a path from A 
 
 ## What it does
 
-- **A-to-B routing** — search for start and end addresses, or click the map to place pins
+- **A-to-B routing** — search for start and end addresses; pins placed on the map are automatically reverse-geocoded to show the nearest street address instead of raw coordinates, or click the map to place pins; up to 3 alternative routes are offered so you can pick the one that suits you
+- **Walk distance target** — set a desired distance or duration for an A-to-B route; the app adds a detour waypoint so you get your steps in rather than always taking the shortest path; a Flip button lets you choose which side of the line the detour bows toward
 - **Loop walks** — pick a starting point and a desired distance (or walking time), and get a circular route back to where you started; use the seed slider to generate different variations
 - **Intermediate waypoints** — add stops along an A-to-B route
 - **Routing preferences** — bias the route toward green areas (parks) or quieter streets

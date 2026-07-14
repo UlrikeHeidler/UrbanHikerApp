@@ -11,9 +11,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
-const startIcon = makeColorIcon('green')
-const endIcon   = makeColorIcon('red')
+const startIcon    = makeColorIcon('green')
+const endIcon      = makeColorIcon('red')
 const waypointIcon = makeColorIcon('violet')
+const detourIcon   = makeColorIcon('orange')
 
 /** @type {Record<string, { color: string, label: string }>} */
 const POI_STYLE = {
@@ -53,13 +54,15 @@ function ClickHandler({ onMapClick }) {
  * @param {string}   props.mode        - 'a-to-b' | 'loop'
  * @param {string}   props.activePin   - 'start' | 'end' | 'waypoint'
  * @param {object[]} props.waypoints   - Array of {lat, lng}
- * @param {object}   props.pois        - { bench: PoiNode[], water: PoiNode[], viewpoint: PoiNode[] }
- * @param {object}   props.poisEnabled - { bench: boolean, water: boolean, viewpoint: boolean }
- * @param {Function} props.onMapClick  - Called with Leaflet LatLng on click
+ * @param {Array[]}  props.altRoutes      - Coordinates of non-selected alternative routes
+ * @param {object}   props.detourWaypoint - Computed detour midpoint {lat,lng} or null
+ * @param {object}   props.pois           - { bench: PoiNode[], water: PoiNode[], viewpoint: PoiNode[] }
+ * @param {object}   props.poisEnabled    - { bench: boolean, water: boolean, viewpoint: boolean }
+ * @param {Function} props.onMapClick     - Called with Leaflet LatLng on click
  */
 export default function MapView({
   startPoint, endPoint, route, mode, activePin,
-  waypoints = [], pois = {}, poisEnabled = {},
+  altRoutes = [], detourWaypoint = null, waypoints = [], pois = {}, poisEnabled = {},
   onMapClick,
 }) {
   const defaultCenter = [38.8737, -77.2311] // Merrifield, Virginia
@@ -91,8 +94,18 @@ export default function MapView({
           </Marker>
         ))}
 
+        {detourWaypoint && (
+          <Marker position={detourWaypoint} icon={detourIcon}>
+            <Popup>Detour point</Popup>
+          </Marker>
+        )}
+
+        {altRoutes.map((coords, i) => (
+          <Polyline key={i} positions={coords} pathOptions={{ color: '#94a3b8', weight: 4, opacity: 0.5 }} />
+        ))}
+
         {route && (
-          <Polyline positions={route} pathOptions={{ color: '#2563eb', weight: 5, opacity: 0.8 }} />
+          <Polyline positions={route} pathOptions={{ color: '#2563eb', weight: 5, opacity: 0.9 }} />
         )}
 
         {Object.entries(pois).map(([type, nodes]) =>

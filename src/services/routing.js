@@ -77,11 +77,11 @@ function buildProfileParams(preferences) {
 }
 
 /**
- * POST to the ORS directions endpoint and return the parsed response.
+ * POST to the ORS directions endpoint and return all parsed features.
  *
  * @param {string} apiKey
  * @param {object} body - ORS request body
- * @returns {Promise<RouteResult>}
+ * @returns {Promise<RouteResult[]>}
  * @throws {Error} On non-2xx response or network failure
  */
 async function postDirections(apiKey, body) {
@@ -100,7 +100,7 @@ async function postDirections(apiKey, body) {
   }
 
   const data = await res.json()
-  return parseFeature(data.features[0])
+  return data.features.map(parseFeature)
 }
 
 /**
@@ -112,20 +112,23 @@ async function postDirections(apiKey, body) {
  * @param {LatLng}       start          - Route origin
  * @param {LatLng}       end            - Route destination
  * @param {RouteOptions} [options={}]   - Optional waypoints and routing preferences
- * @returns {Promise<RouteResult>}
+ * @returns {Promise<RouteResult[]>} Primary route first, then up to 2 alternatives
  * @throws {Error} When the API key is missing, the request fails, or ORS returns an error
  */
 export async function fetchRoute(start, end, options = {}) {
   const apiKey = getApiKey()
   const { waypoints = [], preferences = {} } = options
   const midpoints = waypoints.map((w) => [w.lng, w.lat])
+  const profileParams = buildProfileParams(preferences)
+  const coordinates = [[start.lng, start.lat], ...midpoints, [end.lng, end.lat]]
   const body = {
-    coordinates: [[start.lng, start.lat], ...midpoints, [end.lng, end.lat]],
+    coordinates,
     elevation: true,
     instructions: false,
+    // ORS rejects alternative_routes when waypoints are present (coords > 2)
+    ...(coordinates.length === 2 ? { alternative_routes: { target_count: 3, share_factor: 0.6, weight_factor: 1.4 } } : {}),
+    ...(profileParams ? { options: { profile_params: profileParams } } : {}),
   }
-  const profileParams = buildProfileParams(preferences)
-  if (profileParams) body.profile_params = profileParams
   return postDirections(apiKey, body)
 }
 
@@ -156,5 +159,6 @@ export async function fetchLoopRoute(start, distanceMeters, seed = 0, options = 
       ...(profileParams ? { profile_params: profileParams } : {}),
     },
   }
-  return postDirections(apiKey, body)
+  const results = await postDirections(apiKey, body)
+  return results[0]
 }

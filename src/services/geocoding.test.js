@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { searchAddress } from './geocoding'
+import { searchAddress, reverseGeocode, formatReverseResult } from './geocoding'
 
 /** Minimal Nominatim response shape used across tests */
 const MOCK_RESULTS = [
@@ -96,5 +96,93 @@ describe('searchAddress — security', () => {
     const headerKeys = Object.keys(opts.headers).map((k) => k.toLowerCase())
     expect(headerKeys).not.toContain('authorization')
     expect(headerKeys).not.toContain('cookie')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// formatReverseResult — unit
+// ---------------------------------------------------------------------------
+
+describe('formatReverseResult — unit', () => {
+  it('prefers amenity name + road', () => {
+    const result = formatReverseResult({ address: { amenity: 'Café Central', road: 'Main St' } })
+    expect(result).toBe('Café Central, Main St')
+  })
+
+  it('includes house number with road', () => {
+    const result = formatReverseResult({ address: { road: 'Elm St', house_number: '42' } })
+    expect(result).toBe('42 Elm St')
+  })
+
+  it('appends area when road is present', () => {
+    const result = formatReverseResult({ address: { road: 'Oak Ave', suburb: 'Greenwood' } })
+    expect(result).toBe('Oak Ave, Greenwood')
+  })
+
+  it('falls back to display_name first segment when address is empty', () => {
+    const result = formatReverseResult({ display_name: 'Some Place, City, Country', address: {} })
+    expect(result).toBe('Some Place')
+  })
+
+  it('returns empty string when data is null', () => {
+    expect(formatReverseResult(null)).toBe('')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// reverseGeocode — unit
+// ---------------------------------------------------------------------------
+
+describe('reverseGeocode — unit', () => {
+  it('calls the Nominatim reverse endpoint with lat/lon params', async () => {
+    mockFetch(200, { address: { road: 'Test St' }, display_name: 'Test St, City' })
+    await reverseGeocode(52.52, 13.405)
+    const [url] = fetch.mock.calls[0]
+    expect(url).toContain('nominatim.openstreetmap.org/reverse')
+    expect(url).toContain('lat=52.52')
+    expect(url).toContain('lon=13.405')
+  })
+
+  it('returns a non-empty label on success', async () => {
+    mockFetch(200, { address: { road: 'Unter den Linden', suburb: 'Mitte' }, display_name: '' })
+    const label = await reverseGeocode(52.52, 13.405)
+    expect(label).toBe('Unter den Linden, Mitte')
+  })
+
+  it('returns empty string on non-200 response', async () => {
+    mockFetch(429, {})
+    const label = await reverseGeocode(52.52, 13.405)
+    expect(label).toBe('')
+  })
+
+  it('returns empty string on network failure', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline'))
+    const label = await reverseGeocode(52.52, 13.405)
+    expect(label).toBe('')
+  })
+
+  it('returns empty string for NaN coordinates', async () => {
+    const label = await reverseGeocode(NaN, 13.405)
+    expect(label).toBe('')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// reverseGeocode — security
+// ---------------------------------------------------------------------------
+
+describe('reverseGeocode — security', () => {
+  it('does not throw when the response contains script tags in display_name', async () => {
+    mockFetch(200, { display_name: '<script>alert(1)</script>, City', address: {} })
+    const label = await reverseGeocode(52.52, 13.405)
+    // Returns the raw string — rendering components are responsible for safe display
+    expect(label).toBe('<script>alert(1)</script>')
+  })
+
+  it('sends no Authorization header', async () => {
+    mockFetch(200, { address: {}, display_name: '' })
+    await reverseGeocode(52.52, 13.405)
+    const [, opts] = fetch.mock.calls[0]
+    expect(Object.keys(opts.headers).map(k => k.toLowerCase())).not.toContain('authorization')
   })
 })
