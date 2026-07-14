@@ -34,6 +34,7 @@ src/
 3. **No duplicate code** — shared logic goes in `utils/`. If a pattern appears twice, extract it.
 4. **File size limit** — keep files under ~150-200 lines. Split by responsibility if exceeded.
 5. **Stable architecture** — do not restructure folders or rename modules without an explicit request.
+6. **README check** — after every new feature, review `README.md` and update it if the feature is user-visible or changes setup/usage. If no update is needed, state that explicitly.
 
 ## Development Commands
 
