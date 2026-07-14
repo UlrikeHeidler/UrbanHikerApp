@@ -1,0 +1,76 @@
+.waypoint-list {
+  margin-bottom: 4px;
+}
+
+.waypoint-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.waypoint-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.waypoint-add-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1px dashed #2563eb;
+  border-radius: 5px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  cursor: pointer;
+}
+
+.waypoint-add-btn.adding {
+  background: #fef9c3;
+  border-color: #ca8a04;
+  color: #92400e;
+}
+
+.waypoint-items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.waypoint-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.waypoint-dot {
+  width: 18px;
+  height: 18px;
+  background: #6366f1;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.waypoint-coord { flex: 1; color: #4b5563; font-family: monospace; }
+
+.waypoint-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 11px;
+  padding: 0;
+}
+.waypoint-remove:hover { color: #dc2626; }

@@ -1,0 +1,26 @@
+.map-wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 300px;
+}
+
+.map-container {
+  height: 100%;
+  width: 100%;
+}
+
+.map-hint {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #374151;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  pointer-events: none;
+  white-space: nowrap;
+}

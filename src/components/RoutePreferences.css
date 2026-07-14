@@ -1,0 +1,46 @@
+.route-prefs {
+  margin-bottom: 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.prefs-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 9px 12px;
+  background: #f9fafb;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.prefs-toggle:hover { background: #f3f4f6; }
+
+.chevron { font-size: 10px; color: #9ca3af; }
+
+.prefs-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+}
+
+.pref-row { display: flex; flex-direction: column; gap: 4px; }
+
+.pref-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.pref-value { color: #2563eb; font-weight: 700; }
+
+.pref-slider { width: 100%; accent-color: #2563eb; cursor: pointer; }

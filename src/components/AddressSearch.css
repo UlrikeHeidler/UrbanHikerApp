@@ -1,0 +1,68 @@
+.address-search {
+  position: relative;
+  flex: 1;
+}
+
+.address-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  background: #fff;
+}
+
+.address-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+
+.address-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  list-style: none;
+  z-index: 2000;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.address-dropdown li {
+  padding: 9px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  line-height: 1.4;
+}
+
+.address-dropdown li:last-child {
+  border-bottom: none;
+}
+
+.address-dropdown li:hover {
+  background: #eff6ff;
+}
+
+.search-spinner {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: 2px solid #d1d5db;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}

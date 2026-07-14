@@ -1,0 +1,82 @@
+.saved-routes {
+  margin-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+
+.saved-routes-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  padding: 0;
+}
+
+.saved-routes-toggle:hover { color: #1d4ed8; }
+
+.chevron {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.saved-list {
+  list-style: none;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.saved-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.saved-load-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.saved-load-btn:hover { background: #eff6ff; }
+
+.saved-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.saved-meta {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.saved-delete-btn {
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.saved-delete-btn:hover { color: #dc2626; }

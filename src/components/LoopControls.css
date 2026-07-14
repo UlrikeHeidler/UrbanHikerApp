@@ -1,0 +1,95 @@
+.loop-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  background: #f8faff;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+
+.loop-input-toggle {
+  display: flex;
+  background: #e5e7eb;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.loop-tab {
+  flex: 1;
+  padding: 5px 0;
+  border: none;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #6b7280;
+  transition: all 0.15s;
+}
+
+.loop-tab.active {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.loop-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.loop-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.loop-hint {
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.loop-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loop-input {
+  width: 90px;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  outline: none;
+  background: #fff;
+}
+
+.loop-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+
+.loop-unit {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.loop-slider {
+  width: 100%;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.loop-seed-value {
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: right;
+}

@@ -1,0 +1,42 @@
+.save-route-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.save-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  background: #fff;
+}
+
+.save-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+
+.save-btn {
+  padding: 7px 14px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.save-btn:hover:not(:disabled) { background: #15803d; }
+.save-btn:disabled { background: #86efac; cursor: not-allowed; }
+
+.save-confirmation {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #16a34a;
+  font-weight: 600;
+}

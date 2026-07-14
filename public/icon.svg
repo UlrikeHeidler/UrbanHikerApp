@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1d4ed8"/>
+  <!-- Boot sole -->
+  <rect x="80" y="340" width="300" height="48" rx="24" fill="#fff"/>
+  <!-- Boot upper -->
+  <path d="M120 340 L120 220 Q120 180 160 180 L220 180 L220 200 L280 200 L300 240 L300 340 Z" fill="#fff"/>
+  <!-- Laces -->
+  <line x1="150" y1="240" x2="270" y2="240" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round"/>
+  <line x1="150" y1="270" x2="270" y2="270" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round"/>
+  <line x1="150" y1="300" x2="270" y2="300" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round"/>
+  <!-- Walking stick -->
+  <line x1="360" y1="120" x2="300" y2="380" stroke="#fff" stroke-width="20" stroke-linecap="round"/>
+  <circle cx="360" cy="120" r="20" fill="#fff"/>
+</svg>
