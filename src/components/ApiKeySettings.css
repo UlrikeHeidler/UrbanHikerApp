@@ -1,0 +1,99 @@
+.apikey-settings {
+  margin-bottom: 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.apikey-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 9px 12px;
+  background: #f9fafb;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.apikey-toggle:hover { background: #f3f4f6; }
+
+.apikey-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.apikey-dot.ok   { background: #22c55e; }
+.apikey-dot.warn { background: #f59e0b; }
+
+.apikey-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff;
+}
+
+.apikey-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.apikey-hint a { color: #2563eb; }
+
+.apikey-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.apikey-input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: monospace;
+  min-width: 0;
+}
+
+.apikey-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+
+.apikey-eye {
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.apikey-eye:hover { background: #e5e7eb; }
+
+.apikey-error {
+  margin: 0;
+  font-size: 12px;
+  color: #dc2626;
+}
+
+.apikey-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 12px;
+}

@@ -1,4 +1,5 @@
 import { buildElevationProfile } from '../utils/geo'
+import { getApiKey } from './apiKey'
 
 const ORS_BASE = 'https://api.openrouteservice.org/v2'
 
@@ -35,21 +36,6 @@ const ORS_BASE = 'https://api.openrouteservice.org/v2'
  * @property {RoutePreferences}             [preferences={}]
  */
 
-/**
- * Resolve and validate the ORS API key from the environment.
- *
- * @returns {string} The API key
- * @throws {Error} When the key is absent
- */
-function getApiKey() {
-  const key = import.meta.env.VITE_ORS_API_KEY
-  if (!key) {
-    throw new Error(
-      'No ORS API key found. Create a free key at openrouteservice.org and add VITE_ORS_API_KEY to your .env file.'
-    )
-  }
-  return key
-}
 
 /**
  * Parse a raw ORS GeoJSON feature into a RouteResult.

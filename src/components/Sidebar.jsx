@@ -6,6 +6,7 @@ import RoutePreferences from './RoutePreferences'
 import WaypointList from './WaypointList'
 import RouteResultPanel from './RouteResultPanel'
 import SavedRoutes from './SavedRoutes'
+import ApiKeySettings from './ApiKeySettings'
 import { fetchRoute, fetchLoopRoute } from '../services/routing'
 import './Sidebar.css'
 
@@ -126,6 +127,7 @@ export default function Sidebar({
           />
         )}
 
+        <ApiKeySettings />
         <SavedRoutes routes={savedRoutes} onLoad={onLoadRoute} onDelete={onDeleteRoute} />
       </div>
 
