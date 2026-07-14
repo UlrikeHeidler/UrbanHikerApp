@@ -35,3 +35,4 @@ npm-debug.log*
 # Local Workspace files
 CLAUDE.md
 .codesight/
+.claude/settings.json
