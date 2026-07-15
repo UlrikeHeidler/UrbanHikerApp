@@ -10,6 +10,9 @@ export default defineConfig({
   build: {
     target: ['chrome90', 'firefox88', 'safari15', 'edge90'],
   },
+  optimizeDeps: {
+    esbuildOptions: { target: 'esnext' },
+  },
   base,
   plugins: [
     react(),
