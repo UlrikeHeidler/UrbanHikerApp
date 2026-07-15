@@ -7,6 +7,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 const base = process.env.VITE_BASE ?? '/'
 
 export default defineConfig({
+   build: {
+    target: ['es2020', 'chrome90', 'firefox88', 'safari15', 'edge90'],
+  },
   base,
   plugins: [
     react(),
