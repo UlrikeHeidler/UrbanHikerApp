@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchRoute, fetchLoopRoute } from './routing'
+import { fetchRoute, fetchLoopRoute, fetchSubRoute } from './routing'
 
 const START = { lat: 52.52, lng: 13.405 }
 const END   = { lat: 52.53, lng: 13.42  }
@@ -173,6 +173,31 @@ describe('fetchRoute — unit', () => {
     expect(body.options).toBeUndefined()
   })
 
+  it('always requests waytype extras', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchRoute(START, END)
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.extra_info).toContain('waytype')
+  })
+
+  it('populates wayTypes array on the result (all-zero when extras absent)', async () => {
+    mockFetch(200, makeOrsResponse())
+    const [result] = await fetchRoute(START, END)
+    expect(Array.isArray(result.wayTypes)).toBe(true)
+    expect(result.wayTypes).toHaveLength(result.coordinates.length)
+  })
+
+  it('expands sparse waytype values into per-coordinate array', async () => {
+    const response = makeOrsResponse()
+    response.features[0].properties.extras = {
+      waytype: { values: [[0, 2, 1], [2, 3, 3]] },
+    }
+    mockFetch(200, response)
+    const [result] = await fetchRoute(START, END)
+    // 3 coords total; first 2 = waytype 1, last = waytype 3
+    expect(result.wayTypes).toEqual([1, 1, 3])
+  })
+
   it('throws with the ORS error message on API error', async () => {
     mockFetch(403, { error: { message: 'Invalid API key' } })
     await expect(fetchRoute(START, END)).rejects.toThrow('Invalid API key')
@@ -293,6 +318,13 @@ describe('fetchLoopRoute — unit', () => {
     const body = JSON.parse(fetch.mock.calls[0][1].body)
     expect(body.options.profile_params).toBeUndefined()
   })
+
+  it('always requests waytype extras', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchLoopRoute(START, 3000)
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.extra_info).toContain('waytype')
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -315,5 +347,46 @@ describe('fetchLoopRoute — security', () => {
     const startCopy = { ...START }
     await fetchLoopRoute(START, 3000)
     expect(START).toEqual(startCopy)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// fetchSubRoute — unit
+// ---------------------------------------------------------------------------
+
+describe('fetchSubRoute — unit', () => {
+  beforeEach(() => { setApiKey('test-api-key') })
+
+  it('sends avoid_features: ["highways"] in the options body', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchSubRoute(START, END)
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.options.avoid_features).toEqual(['highways'])
+  })
+
+  it('does not request alternative routes (single best path)', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchSubRoute(START, END)
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.alternative_routes).toBeUndefined()
+  })
+
+  it('requests waytype extras', async () => {
+    mockFetch(200, makeOrsResponse())
+    await fetchSubRoute(START, END)
+    const body = JSON.parse(fetch.mock.calls[0][1].body)
+    expect(body.extra_info).toContain('waytype')
+  })
+
+  it('returns a single RouteResult', async () => {
+    mockFetch(200, makeOrsResponse())
+    const result = await fetchSubRoute(START, END)
+    expect(result.coordinates.length).toBeGreaterThan(0)
+    expect(result.info.distance).toBeDefined()
+  })
+
+  it('throws when ORS cannot find a highway-free path', async () => {
+    mockFetch(404, { error: { message: 'Unable to find a route' } })
+    await expect(fetchSubRoute(START, END)).rejects.toThrow('Unable to find a route')
   })
 })

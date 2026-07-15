@@ -10,9 +10,10 @@ A personal web app for planning walking routes in cities — find a path from A 
 - **Intermediate waypoints** — add stops along an A-to-B route
 - **Routing preferences** — bias the route toward green areas (parks) or quieter streets
 - **Elevation profile** — visualise the height changes along your route
-- **POI overlay** — show nearby benches, drinking water points, and viewpoints from OpenStreetMap
+- **POI overlay** — show nearby benches, drinking water points, viewpoints, bus stops, tram stops, and metro stations from OpenStreetMap; each toggle button is colour-coded to match its map marker; clicking a transit stop shows its routes
 - **GPX export** — download your route for use in any GPS device or app
 - **Save routes** — store favourite routes locally in your browser (no account needed)
+- **Settings panel** — configure default route mode, default loop distance, routing preference defaults, POI visibility defaults, default start point, and API key — all persisted in the browser; reset to base profile at any time
 - **PWA** — install it on your phone's home screen or desktop for offline-capable use
 
 All map data is from [OpenStreetMap](https://www.openstreetmap.org). Walking routes are calculated by [OpenRouteService](https://openrouteservice.org).

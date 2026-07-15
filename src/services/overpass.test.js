@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { fetchPois } from './overpass'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { fetchPois, fetchStopRoutes } from './overpass'
 
 const BBOX = { minLat: 38.86, minLng: -77.24, maxLat: 38.90, maxLng: -77.20 }
 
@@ -16,6 +16,9 @@ const SAMPLE_ELEMENTS = [
   { id: 2, lat: 38.88, lon: -77.22, tags: { amenity: 'drinking_water', name: 'Fountain' } },
   { id: 3, lat: 38.89, lon: -77.21, tags: { tourism: 'viewpoint', name: 'Hill View' } },
   { id: 4, lat: 38.86, lon: -77.24, tags: { amenity: 'unknown_type' } },
+  { id: 5, lat: 38.87, lon: -77.23, tags: { highway: 'bus_stop', name: 'Main St', route_ref: '10;42', ref: 'MS1' } },
+  { id: 6, lat: 38.88, lon: -77.22, tags: { railway: 'tram_stop', name: 'Central' } },
+  { id: 7, lat: 38.89, lon: -77.21, tags: { railway: 'station', subway: 'yes', name: 'City Hall' } },
 ]
 
 // ---------------------------------------------------------------------------
@@ -26,7 +29,7 @@ describe('fetchPois — unit', () => {
   it('returns an empty object when types array is empty (no fetch made)', async () => {
     const spy = vi.spyOn(globalThis, 'fetch')
     const result = await fetchPois(BBOX, [])
-    expect(result).toEqual({ bench: [], water: [], viewpoint: [] })
+    expect(result).toEqual({ bench: [], water: [], viewpoint: [], bus_stop: [], tram_stop: [], subway: [] })
     expect(spy).not.toHaveBeenCalled()
   })
 
@@ -54,7 +57,34 @@ describe('fetchPois — unit', () => {
     mockFetch(200, { elements: SAMPLE_ELEMENTS })
     const result = await fetchPois(BBOX, ['bench', 'water', 'viewpoint'])
     const total = result.bench.length + result.water.length + result.viewpoint.length
-    expect(total).toBe(3) // element 4 (unknown_type) is ignored
+    expect(total).toBe(3) // element 4 (unknown_type) is ignored; transit elements not in requested types
+  })
+
+  it('categorises bus stops correctly', async () => {
+    mockFetch(200, { elements: SAMPLE_ELEMENTS })
+    const result = await fetchPois(BBOX, ['bus_stop'])
+    expect(result.bus_stop).toHaveLength(1)
+    expect(result.bus_stop[0].name).toBe('Main St')
+  })
+
+  it('categorises tram stops correctly', async () => {
+    mockFetch(200, { elements: SAMPLE_ELEMENTS })
+    const result = await fetchPois(BBOX, ['tram_stop'])
+    expect(result.tram_stop).toHaveLength(1)
+    expect(result.tram_stop[0].name).toBe('Central')
+  })
+
+  it('categorises subway stations correctly', async () => {
+    mockFetch(200, { elements: SAMPLE_ELEMENTS })
+    const result = await fetchPois(BBOX, ['subway'])
+    expect(result.subway).toHaveLength(1)
+    expect(result.subway[0].name).toBe('City Hall')
+  })
+
+  it('does not include transit POIs when not requested', async () => {
+    mockFetch(200, { elements: SAMPLE_ELEMENTS })
+    const result = await fetchPois(BBOX, ['bench'])
+    expect(result.bus_stop).toBeUndefined()
   })
 
   it('sends the bbox coordinates in the Overpass query body', async () => {
@@ -86,6 +116,93 @@ describe('fetchPois — unit', () => {
   it('throws on network failure', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline'))
     await expect(fetchPois(BBOX, ['bench'])).rejects.toThrow('Offline')
+  })
+
+  it('stores route_ref and ref tags on transit stop nodes', async () => {
+    mockFetch(200, { elements: SAMPLE_ELEMENTS })
+    const result = await fetchPois(BBOX, ['bus_stop'])
+    expect(result.bus_stop[0].routeRef).toBe('10;42')
+    expect(result.bus_stop[0].stopRef).toBe('MS1')
+  })
+
+  it('leaves routeRef and stopRef undefined when tags are absent', async () => {
+    mockFetch(200, { elements: SAMPLE_ELEMENTS })
+    const result = await fetchPois(BBOX, ['tram_stop'])
+    expect(result.tram_stop[0].routeRef).toBeUndefined()
+    expect(result.tram_stop[0].stopRef).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// fetchStopRoutes — unit tests
+// ---------------------------------------------------------------------------
+
+describe('fetchStopRoutes — unit', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('returns sorted route refs from relation tags', async () => {
+    mockFetch(200, {
+      elements: [
+        { type: 'relation', id: 1, tags: { route: 'bus', ref: '42' } },
+        { type: 'relation', id: 2, tags: { route: 'bus', ref: '10' } },
+      ],
+    })
+    const result = await fetchStopRoutes(999)
+    expect(result).toEqual(['10', '42'])
+  })
+
+  it('falls back to name when ref tag is absent', async () => {
+    mockFetch(200, {
+      elements: [{ type: 'relation', id: 1, tags: { route: 'bus', name: 'Night Bus' } }],
+    })
+    const result = await fetchStopRoutes(999)
+    expect(result).toEqual(['Night Bus'])
+  })
+
+  it('returns empty array when no route relations found', async () => {
+    mockFetch(200, { elements: [] })
+    const result = await fetchStopRoutes(999)
+    expect(result).toEqual([])
+  })
+
+  it('throws on non-200 response', async () => {
+    mockFetch(429, {})
+    await expect(fetchStopRoutes(999)).rejects.toThrow('Route fetch failed (429)')
+  })
+
+  it('includes the node id in the query body', async () => {
+    mockFetch(200, { elements: [] })
+    await fetchStopRoutes(12345)
+    const body = decodeURIComponent(fetch.mock.calls[0][1].body)
+    expect(body).toContain('node(12345)')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// fetchStopRoutes — security tests
+// ---------------------------------------------------------------------------
+
+describe('fetchStopRoutes — security', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('throws on nodeId of zero', async () => {
+    await expect(fetchStopRoutes(0)).rejects.toThrow('Invalid node id')
+  })
+
+  it('throws on negative nodeId', async () => {
+    await expect(fetchStopRoutes(-5)).rejects.toThrow('Invalid node id')
+  })
+
+  it('throws on float nodeId', async () => {
+    await expect(fetchStopRoutes(1.5)).rejects.toThrow('Invalid node id')
+  })
+
+  it('throws on string nodeId', async () => {
+    await expect(fetchStopRoutes('999')).rejects.toThrow('Invalid node id')
+  })
+
+  it('throws on null nodeId', async () => {
+    await expect(fetchStopRoutes(null)).rejects.toThrow('Invalid node id')
   })
 })
 

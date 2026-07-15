@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { minutesToMeters } from '../utils/formatters'
+import { DEFAULT_LOOP_KM, DEFAULT_LOOP_MINUTES, DEFAULT_LOOP_INPUT_MODE } from '../config/defaults'
 import './LoopControls.css'
 
 /** @typedef {'distance' | 'duration'} LoopInputMode */
@@ -10,15 +11,18 @@ import './LoopControls.css'
  * changing one clears the other.
  *
  * @param {object}   props
- * @param {number}   props.distanceMeters  - Controlled distance value in metres
+ * @param {number}   props.distanceMeters   - Controlled distance value in metres
  * @param {Function} props.onDistanceChange - Called with new distance in metres
  * @param {number}   props.seed             - Current route variation seed (0–90)
  * @param {Function} props.onSeedChange     - Called with new seed value
+ * @param {number}   [props.initialKm]        - Initial km input value (from saved defaults)
+ * @param {number}   [props.initialMinutes]   - Initial minutes input value (from saved defaults)
+ * @param {LoopInputMode} [props.initialInputMode] - Initial tab selection
  */
-export default function LoopControls({ distanceMeters, onDistanceChange, seed, onSeedChange }) {
-  const [inputMode, setInputMode] = useState(/** @type {LoopInputMode} */ ('distance'))
-  const [kmValue, setKmValue] = useState('5')
-  const [minValue, setMinValue] = useState('60')
+export default function LoopControls({ distanceMeters, onDistanceChange, seed, onSeedChange, initialKm, initialMinutes, initialInputMode }) {
+  const [inputMode, setInputMode] = useState(/** @type {LoopInputMode} */ (initialInputMode ?? DEFAULT_LOOP_INPUT_MODE))
+  const [kmValue, setKmValue] = useState(String(initialKm ?? DEFAULT_LOOP_KM))
+  const [minValue, setMinValue] = useState(String(initialMinutes ?? DEFAULT_LOOP_MINUTES))
 
   /** Switch between distance-based and duration-based input. */
   function handleModeChange(newMode) {

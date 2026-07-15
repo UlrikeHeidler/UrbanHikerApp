@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './MapView.css'
+import { fetchStopRoutes } from '../services/overpass'
+import { MAP_DEFAULT_CENTER } from '../config/defaults'
 
 // Fix Leaflet's default icon path issue with Vite
 delete L.Icon.Default.prototype._getIconUrl
@@ -21,6 +24,39 @@ const POI_STYLE = {
   bench:     { color: '#16a34a', label: '🪑 Bench' },
   water:     { color: '#2563eb', label: '💧 Water' },
   viewpoint: { color: '#9333ea', label: '🔭 Viewpoint' },
+  bus_stop:  { color: '#f97316', label: '🚌 Bus Stop' },
+  tram_stop: { color: '#0d9488', label: '🚃 Tram Stop' },
+  subway:    { color: '#7c3aed', label: '🚇 Metro' },
+}
+
+const TRANSIT_TYPES = new Set(['bus_stop', 'tram_stop', 'subway'])
+
+/**
+ * Popup for transit stops. Shows name, stop ref, and transit routes.
+ * Routes are read from the OSM route_ref tag; if absent, fetched lazily
+ * from Overpass when the popup opens.
+ *
+ * @param {{ node: import('../services/overpass').PoiNode, label: string }} props
+ */
+function TransitPopup({ node, label }) {
+  const [routes, setRoutes] = useState(() =>
+    node.routeRef ? node.routeRef.split(';').map((r) => r.trim()).filter(Boolean) : null
+  )
+
+  useEffect(() => {
+    if (routes !== null) return
+    fetchStopRoutes(node.id).then(setRoutes).catch(() => setRoutes([]))
+  }, [node.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <span>
+      <strong>{label}</strong>
+      {node.name && <><br />{node.name}</>}
+      {node.stopRef && <><br />Stop: {node.stopRef}</>}
+      {routes === null && <><br /><em>Loading lines…</em></>}
+      {routes?.length > 0 && <><br />Lines: {routes.join(', ')}</>}
+    </span>
+  )
 }
 
 /**
@@ -63,9 +99,9 @@ function ClickHandler({ onMapClick }) {
 export default function MapView({
   startPoint, endPoint, route, mode, activePin,
   altRoutes = [], detourWaypoint = null, waypoints = [], pois = {}, poisEnabled = {},
-  onMapClick,
+  onMapClick, onRouteClick,
 }) {
-  const defaultCenter = [38.8737, -77.2311] // Merrifield, Virginia
+  const defaultCenter = MAP_DEFAULT_CENTER
 
   function getHint() {
     if (activePin === 'waypoint') return 'Click on the map to place a waypoint'
@@ -105,7 +141,11 @@ export default function MapView({
         ))}
 
         {route && (
-          <Polyline positions={route} pathOptions={{ color: '#2563eb', weight: 5, opacity: 0.9 }} />
+          <Polyline
+            positions={route}
+            pathOptions={{ color: '#2563eb', weight: 5, opacity: 0.9 }}
+            eventHandlers={onRouteClick ? { click: (e) => { e.originalEvent.stopPropagation(); onRouteClick(e.latlng) } } : {}}
+          />
         )}
 
         {Object.entries(pois).map(([type, nodes]) =>
@@ -117,7 +157,11 @@ export default function MapView({
                   radius={6}
                   pathOptions={{ color: POI_STYLE[type]?.color, fillColor: POI_STYLE[type]?.color, fillOpacity: 0.8 }}
                 >
-                  <Popup>{POI_STYLE[type]?.label}{node.name ? ` — ${node.name}` : ''}</Popup>
+                  <Popup>
+                    {TRANSIT_TYPES.has(type)
+                      ? <TransitPopup node={node} label={POI_STYLE[type]?.label} />
+                      : `${POI_STYLE[type]?.label}${node.name ? ` — ${node.name}` : ''}`}
+                  </Popup>
                 </CircleMarker>
               ))
             : null

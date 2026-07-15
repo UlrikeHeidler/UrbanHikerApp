@@ -22,12 +22,14 @@ const ORS_BASE = 'https://api.openrouteservice.org/v2'
  * @property {[number, number][]} coordinates - Ordered [lat, lng] pairs for the polyline
  * @property {RouteInfo} info - Summary statistics for the route
  * @property {import('../utils/geo').ElevationPoint[]} elevationProfile - Elevation chart data
+ * @property {number[]} wayTypes - Per-coordinate ORS waytype values (0=unknown,1=state road,2=road,3=street,4=path,5=track,6=cycleway,7=footway,8=steps). Same length as coordinates.
  */
 
 /**
  * @typedef {Object} RoutePreferences
- * @property {number} [green=0]  - Preference for green/park areas (0–0.8). ORS foot-walking only.
- * @property {number} [quiet=0]  - Preference for quiet roads (0–0.8). ORS foot-walking only.
+ * @property {number}  [green=0]          - Preference for green/park areas (0–0.8). ORS foot-walking only.
+ * @property {number}  [quiet=0]          - Preference for quiet roads (0–0.8). ORS foot-walking only.
+ * @property {boolean} [refineRoute=false] - After fetching, auto-re-route main-road segments > 122 m.
  */
 
 /**
@@ -36,6 +38,23 @@ const ORS_BASE = 'https://api.openrouteservice.org/v2'
  * @property {RoutePreferences}             [preferences={}]
  */
 
+
+/**
+ * Expand ORS sparse waytype values into a per-coordinate array.
+ * Each entry in `values` is [startIdx, endIdx, waytypeValue].
+ *
+ * @param {[number,number,number][]} values - ORS extras sparse format
+ * @param {number} coordCount
+ * @returns {number[]}
+ */
+function expandWayTypes(values, coordCount) {
+  const result = new Array(coordCount).fill(0)
+  if (!Array.isArray(values)) return result
+  for (const [start, end, type] of values) {
+    for (let i = start; i < end && i < coordCount; i++) result[i] = type
+  }
+  return result
+}
 
 /**
  * Parse a raw ORS GeoJSON feature into a RouteResult.
@@ -48,8 +67,10 @@ function parseFeature(feature) {
   const raw = feature.geometry.coordinates
   // ORS returns [lng, lat, elevation?] — convert to Leaflet-style [lat, lng]
   const coordinates = raw.map(([lng, lat]) => [lat, lng])
+  const waytypeValues = feature.properties.extras?.waytype?.values
   return {
     coordinates,
+    wayTypes: expandWayTypes(waytypeValues, coordinates.length),
     elevationProfile: buildElevationProfile(raw),
     info: {
       distance: summary.distance,
@@ -61,19 +82,23 @@ function parseFeature(feature) {
 }
 
 /**
- * Build the ORS profile_params block from a RoutePreferences object.
- * Returns undefined when no non-zero preference is set (omits the key entirely).
+ * Build the ORS `options` additions from a RoutePreferences object.
+ * Returns an object with only the keys that are actually needed; callers
+ * merge this into the top-level `options` block (alongside `round_trip`
+ * for loops, or as the sole content for A-to-B routes).
+ * Returns an empty object when nothing needs to be sent.
  *
  * @param {RoutePreferences} [preferences]
- * @returns {object|undefined}
+ * @returns {{ profile_params?: object, avoid_features?: string[] }}
  */
-function buildProfileParams(preferences) {
-  if (!preferences) return undefined
+function buildOptions(preferences) {
+  if (!preferences) return {}
+  const result = {}
   const weightings = {}
   if (preferences.green > 0) weightings.green = preferences.green
   if (preferences.quiet > 0) weightings.quiet = preferences.quiet
-  if (!Object.keys(weightings).length) return undefined
-  return { weightings }
+  if (Object.keys(weightings).length) result.profile_params = { weightings }
+  return result
 }
 
 /**
@@ -119,15 +144,16 @@ export async function fetchRoute(start, end, options = {}) {
   const apiKey = getApiKey()
   const { waypoints = [], preferences = {} } = options
   const midpoints = waypoints.map((w) => [w.lng, w.lat])
-  const profileParams = buildProfileParams(preferences)
+  const extraOptions = buildOptions(preferences)
   const coordinates = [[start.lng, start.lat], ...midpoints, [end.lng, end.lat]]
   const body = {
     coordinates,
     elevation: true,
     instructions: false,
+    extra_info: ['waytype'],
     // ORS rejects alternative_routes when waypoints are present (coords > 2)
     ...(coordinates.length === 2 ? { alternative_routes: { target_count: 3, share_factor: 0.6, weight_factor: 1.4 } } : {}),
-    ...(profileParams ? { options: { profile_params: profileParams } } : {}),
+    ...(Object.keys(extraOptions).length ? { options: extraOptions } : {}),
   }
   return postDirections(apiKey, body)
 }
@@ -148,16 +174,38 @@ export async function fetchRoute(start, end, options = {}) {
  */
 export async function fetchLoopRoute(start, distanceMeters, seed = 0, options = {}) {
   const apiKey = getApiKey()
-  // ORS requires profile_params nested inside `options` when `options` is present
-  const profileParams = buildProfileParams(options.preferences)
+  const extraOptions = buildOptions(options.preferences)
   const body = {
     coordinates: [[start.lng, start.lat]],
     elevation: true,
     instructions: false,
+    extra_info: ['waytype'],
     options: {
       round_trip: { length: distanceMeters, points: 3, seed },
-      ...(profileParams ? { profile_params: profileParams } : {}),
+      ...extraOptions,
     },
+  }
+  const results = await postDirections(apiKey, body)
+  return results[0]
+}
+
+/**
+ * Fetch a quiet sub-route between two points, hard-excluding primary-class roads.
+ * Used by the route-refinement pass to replace main-road segments.
+ *
+ * @param {LatLng} start
+ * @param {LatLng} end
+ * @returns {Promise<RouteResult>} Single best result
+ * @throws {Error} When no alternative path exists or the API call fails
+ */
+export async function fetchSubRoute(start, end) {
+  const apiKey = getApiKey()
+  const body = {
+    coordinates: [[start.lng, start.lat], [end.lng, end.lat]],
+    elevation: true,
+    instructions: false,
+    extra_info: ['waytype'],
+    options: { avoid_features: ['highways'] },
   }
   const results = await postDirections(apiKey, body)
   return results[0]
