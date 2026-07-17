@@ -15,15 +15,14 @@ import './RouteResultPanel.css'
  * @param {Array}    props.elevationProfile
  * @param {Array}    props.coordinates        - Route coordinates for GPX export
  * @param {Function} props.onSaveRoute        - Called with route name string
- * @param {{ bench: boolean, water: boolean, viewpoint: boolean }} props.poisEnabled
- * @param {Function} props.onTogglePoi        - Called with PoiType string
- * @param {Function} props.onLoadPois         - Triggers Overpass fetch
- * @param {boolean}  props.poisLoading
+ * @param {{ bench: boolean, … }} props.poisEnabled
+ * @param {Function} props.onTogglePoi  - Called with PoiType string
+ * @param {boolean}  props.poisLoading  - True while a viewport fetch is in-flight
  */
 export default function RouteResultPanel({
   routeInfo, elevationProfile, coordinates,
   onSaveRoute,
-  poisEnabled, onTogglePoi, onLoadPois, poisLoading,
+  poisEnabled, onTogglePoi, poisLoading,
 }) {
   const [isSaved, setIsSaved] = useState(false)
 
@@ -52,9 +51,7 @@ export default function RouteResultPanel({
       <PoiControls
         enabled={poisEnabled}
         onToggle={onTogglePoi}
-        onLoad={onLoadPois}
         isLoading={poisLoading}
-        hasRoute={Boolean(coordinates?.length)}
       />
     </div>
   )

@@ -9,6 +9,7 @@ import RouteAlternatives from './RouteAlternatives'
 import DetourControls from './DetourControls'
 import SavedRoutes from './SavedRoutes'
 import AppSettings from './AppSettings'
+import TransitControls from './TransitControls'
 import { fetchRoute, fetchLoopRoute, fetchSubRoute } from '../services/routing'
 import { minutesToMeters } from '../utils/formatters'
 import { findMainRoadSegments, spliceSubRoute } from '../utils/routeRefine'
@@ -39,7 +40,8 @@ export default function Sidebar({
   savedRoutes, onSaveRoute, onLoadRoute, onDeleteRoute,
   onDefaultStartChange,
   onRouteClick,
-  poisEnabled, onTogglePoi, onLoadPois, poisLoading,
+  poisEnabled, onTogglePoi, poisLoading,
+  transitEnabled, onToggleTransitEnabled, transitRoutes, transitVisible, onToggleTransitRoute,
 }) {
   const [loopMeters, setLoopMeters]     = useState(
     _appDefaults.defaultLoopInputMode === 'duration'
@@ -248,10 +250,17 @@ export default function Sidebar({
             onSaveRoute={onSaveRoute}
             poisEnabled={poisEnabled}
             onTogglePoi={onTogglePoi}
-            onLoadPois={onLoadPois}
             poisLoading={poisLoading}
           />
         )}
+
+        <TransitControls
+          enabled={transitEnabled}
+          onToggleEnabled={onToggleTransitEnabled}
+          routes={transitRoutes ?? []}
+          visible={transitVisible ?? {}}
+          onToggleRoute={onToggleTransitRoute}
+        />
 
         <AppSettings
           currentStart={startPoint}

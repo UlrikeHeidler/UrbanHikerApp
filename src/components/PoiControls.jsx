@@ -11,28 +11,20 @@ const POI_CONFIG = {
 }
 
 /**
- * Toggle panel for POI overlay types. Shows a "Load nearby POIs" button
- * that fetches from Overpass once a route is displayed.
+ * Toggle panel for POI overlay types. Enabling a type immediately triggers
+ * a viewport fetch via the PoiLayer component in MapView.
  *
  * @param {object}   props
- * @param {{ bench: boolean, water: boolean, viewpoint: boolean, bus_stop: boolean, tram_stop: boolean, subway: boolean }} props.enabled - Per-type visibility
- * @param {Function} props.onToggle    - Called with a PoiType string to toggle its visibility
- * @param {Function} props.onLoad      - Called when the user requests a POI fetch
- * @param {boolean}  props.isLoading   - True while a POI fetch is in progress
- * @param {boolean}  props.hasRoute    - True when a route is currently displayed
+ * @param {{ bench: boolean, water: boolean, viewpoint: boolean, bus_stop: boolean, tram_stop: boolean, subway: boolean }} props.enabled
+ * @param {Function} props.onToggle   - Called with a PoiType string to toggle visibility
+ * @param {boolean}  props.isLoading  - True while a viewport fetch is in progress
  */
-export default function PoiControls({ enabled, onToggle, onLoad, isLoading, hasRoute }) {
+export default function PoiControls({ enabled, onToggle, isLoading }) {
   return (
     <div className="poi-controls">
       <div className="poi-header">
         <span className="poi-title">Nearby POIs</span>
-        <button
-          className="poi-load-btn"
-          onClick={onLoad}
-          disabled={!hasRoute || isLoading}
-        >
-          {isLoading ? 'Loading…' : 'Load'}
-        </button>
+        {isLoading && <span className="poi-loading">Loading…</span>}
       </div>
       <div className="poi-toggles">
         {Object.entries(POI_CONFIG).map(([type, { label, color }]) => (

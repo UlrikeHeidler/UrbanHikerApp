@@ -21,8 +21,8 @@ export const DEFAULT_LOOP_INPUT_MODE = 'distance'
 
 /** Which POI overlay types are visible by default. */
 export const DEFAULT_POI_ENABLED = {
-  bench: true, water: true, viewpoint: true,
-  bus_stop: true, tram_stop: true, subway: true,
+  bench: false, water: false, viewpoint: false,
+  bus_stop: false, tram_stop: false, subway: false,
 }
 
 /**

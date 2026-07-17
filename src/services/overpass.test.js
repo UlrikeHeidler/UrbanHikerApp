@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { fetchPois, fetchStopRoutes } from './overpass'
+import { fetchPois, fetchStopRoutes, fetchTransitRoutes } from './overpass'
 
 const BBOX = { minLat: 38.86, minLng: -77.24, maxLat: 38.90, maxLng: -77.20 }
 
@@ -110,12 +110,12 @@ describe('fetchPois — unit', () => {
 
   it('throws on non-200 response', async () => {
     mockFetch(429, {})
-    await expect(fetchPois(BBOX, ['bench'])).rejects.toThrow('POI fetch failed (429)')
+    await expect(fetchPois(BBOX, ['bench'])).rejects.toThrow('rate limit')
   })
 
-  it('throws on network failure', async () => {
+  it('throws on network failure after retry', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline'))
-    await expect(fetchPois(BBOX, ['bench'])).rejects.toThrow('Offline')
+    await expect(fetchPois(BBOX, ['bench'])).rejects.toThrow('Could not reach Overpass')
   })
 
   it('stores route_ref and ref tags on transit stop nodes', async () => {
@@ -167,7 +167,7 @@ describe('fetchStopRoutes — unit', () => {
 
   it('throws on non-200 response', async () => {
     mockFetch(429, {})
-    await expect(fetchStopRoutes(999)).rejects.toThrow('Route fetch failed (429)')
+    await expect(fetchStopRoutes(999)).rejects.toThrow('rate limit')
   })
 
   it('includes the node id in the query body', async () => {
@@ -203,6 +203,149 @@ describe('fetchStopRoutes — security', () => {
 
   it('throws on null nodeId', async () => {
     await expect(fetchStopRoutes(null)).rejects.toThrow('Invalid node id')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// fetchTransitRoutes — unit tests
+// ---------------------------------------------------------------------------
+
+const TRANSIT_ELEMENTS = [
+  {
+    type: 'relation', id: 101,
+    tags: { route: 'bus', ref: '42', name: 'Bus 42' },
+    members: [
+      { type: 'way', ref: 1, role: '', geometry: [{ lat: 38.87, lon: -77.23 }, { lat: 38.88, lon: -77.22 }] },
+      { type: 'node', ref: 2, role: 'stop' },
+    ],
+  },
+  {
+    type: 'relation', id: 102,
+    tags: { route: 'tram', ref: 'T1' },
+    members: [
+      { type: 'way', ref: 3, role: '', geometry: [{ lat: 38.86, lon: -77.24 }, { lat: 38.87, lon: -77.23 }] },
+    ],
+  },
+  {
+    type: 'relation', id: 103,
+    tags: { route: 'ferry' },           // unsupported type — must be ignored
+    members: [
+      { type: 'way', ref: 4, role: '', geometry: [{ lat: 38.85, lon: -77.25 }, { lat: 38.86, lon: -77.24 }] },
+    ],
+  },
+  {
+    type: 'node', id: 999,              // non-relation element — must be ignored
+    tags: { route: 'bus' },
+    members: [],
+  },
+]
+
+describe('fetchTransitRoutes — unit', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('returns one entry per supported route relation', async () => {
+    mockFetch(200, { elements: TRANSIT_ELEMENTS })
+    const result = await fetchTransitRoutes(BBOX)
+    expect(result).toHaveLength(2)
+  })
+
+  it('maps route type to the correct color', async () => {
+    mockFetch(200, { elements: TRANSIT_ELEMENTS })
+    const result = await fetchTransitRoutes(BBOX)
+    const bus = result.find((r) => r.type === 'bus')
+    const tram = result.find((r) => r.type === 'tram')
+    expect(bus.color).toBe('#f97316')
+    expect(tram.color).toBe('#0d9488')
+  })
+
+  it('extracts ref and name tags correctly', async () => {
+    mockFetch(200, { elements: TRANSIT_ELEMENTS })
+    const result = await fetchTransitRoutes(BBOX)
+    const bus = result.find((r) => r.type === 'bus')
+    expect(bus.ref).toBe('42')
+    expect(bus.name).toBe('Bus 42')
+  })
+
+  it('falls back to ref when name tag is absent', async () => {
+    mockFetch(200, { elements: TRANSIT_ELEMENTS })
+    const result = await fetchTransitRoutes(BBOX)
+    const tram = result.find((r) => r.type === 'tram')
+    expect(tram.name).toBe('T1')
+  })
+
+  it('converts member geometry to [lat, lng] pairs', async () => {
+    mockFetch(200, { elements: TRANSIT_ELEMENTS })
+    const result = await fetchTransitRoutes(BBOX)
+    const bus = result.find((r) => r.type === 'bus')
+    expect(bus.ways).toHaveLength(1)
+    expect(bus.ways[0][0]).toEqual([38.87, -77.23])
+  })
+
+  it('ignores members without geometry', async () => {
+    mockFetch(200, {
+      elements: [{
+        type: 'relation', id: 200,
+        tags: { route: 'bus', ref: '99' },
+        members: [
+          { type: 'way', ref: 5, role: '' },           // no geometry property
+          { type: 'node', ref: 6, role: 'stop' },
+        ],
+      }],
+    })
+    const result = await fetchTransitRoutes(BBOX)
+    expect(result).toHaveLength(0)
+  })
+
+  it('ignores unsupported route types (ferry)', async () => {
+    mockFetch(200, { elements: TRANSIT_ELEMENTS })
+    const result = await fetchTransitRoutes(BBOX)
+    expect(result.find((r) => r.type === 'ferry')).toBeUndefined()
+  })
+
+  it('returns empty array when elements is missing', async () => {
+    mockFetch(200, {})
+    const result = await fetchTransitRoutes(BBOX)
+    expect(result).toEqual([])
+  })
+
+  it('throws on non-200 response', async () => {
+    mockFetch(500, {})
+    await expect(fetchTransitRoutes(BBOX)).rejects.toThrow('Overpass request failed (500)')
+  })
+
+  it('sends bbox coordinates in the Overpass query body', async () => {
+    mockFetch(200, { elements: [] })
+    await fetchTransitRoutes(BBOX)
+    const body = decodeURIComponent(fetch.mock.calls[0][1].body)
+    expect(body).toContain('38.86')
+    expect(body).toContain('-77.24')
+  })
+})
+
+describe('fetchTransitRoutes — security', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('URL-encodes the query body', async () => {
+    mockFetch(200, { elements: [] })
+    await fetchTransitRoutes(BBOX)
+    const rawBody = fetch.mock.calls[0][1].body
+    expect(rawBody.startsWith('data=')).toBe(true)
+    expect(rawBody).not.toContain('[out:json]')
+  })
+
+  it('does not execute route name values as code', async () => {
+    mockFetch(200, {
+      elements: [{
+        type: 'relation', id: 300,
+        tags: { route: 'bus', ref: '<script>x</script>', name: '<script>x</script>' },
+        members: [
+          { type: 'way', ref: 7, role: '', geometry: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] },
+        ],
+      }],
+    })
+    const result = await fetchTransitRoutes(BBOX)
+    expect(result[0].ref).toBe('<script>x</script>')
+    expect(result[0].name).toBe('<script>x</script>')
   })
 })
 

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMapEvents, ScaleControl } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './MapView.css'
 import { fetchStopRoutes } from '../services/overpass'
 import { MAP_DEFAULT_CENTER } from '../config/defaults'
+import TransitRoutesLayer from './TransitRoutesLayer'
+import PoiLayer from './PoiLayer'
 
 // Fix Leaflet's default icon path issue with Vite
 delete L.Icon.Default.prototype._getIconUrl
@@ -42,10 +44,13 @@ function TransitPopup({ node, label }) {
   const [routes, setRoutes] = useState(() =>
     node.routeRef ? node.routeRef.split(';').map((r) => r.trim()).filter(Boolean) : null
   )
+  const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
     if (routes !== null) return
-    fetchStopRoutes(node.id).then(setRoutes).catch(() => setRoutes([]))
+    fetchStopRoutes(node.id)
+      .then(setRoutes)
+      .catch((err) => { setRoutes([]); setLoadError(err.message) })
   }, [node.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -55,6 +60,7 @@ function TransitPopup({ node, label }) {
       {node.stopRef && <><br />Stop: {node.stopRef}</>}
       {routes === null && <><br /><em>Loading lines…</em></>}
       {routes?.length > 0 && <><br />Lines: {routes.join(', ')}</>}
+      {loadError && <><br /><em style={{ color: '#b91c1c' }}>{loadError}</em></>}
     </span>
   )
 }
@@ -92,13 +98,21 @@ function ClickHandler({ onMapClick }) {
  * @param {object[]} props.waypoints   - Array of {lat, lng}
  * @param {Array[]}  props.altRoutes      - Coordinates of non-selected alternative routes
  * @param {object}   props.detourWaypoint - Computed detour midpoint {lat,lng} or null
- * @param {object}   props.pois           - { bench: PoiNode[], water: PoiNode[], viewpoint: PoiNode[] }
- * @param {object}   props.poisEnabled    - { bench: boolean, water: boolean, viewpoint: boolean }
- * @param {Function} props.onMapClick     - Called with Leaflet LatLng on click
+ * @param {object}   props.pois                  - { bench: PoiNode[], … }
+ * @param {object}   props.poisEnabled            - { bench: boolean, … }
+ * @param {object}   props.poisEnabled            - { bench: boolean, … }
+ * @param {Function} props.onPoisLoaded           - Called with PoiResult for the current viewport
+ * @param {Function} props.onPoisLoadingChange    - Called with boolean while a fetch is in-flight
+ * @param {boolean}  props.transitEnabled         - Show transit routes layer
+ * @param {object}   props.transitVisible         - { [routeId]: boolean }
+ * @param {Function} props.onTransitRoutesLoaded  - Called with TransitRoute[] after each viewport fetch
+ * @param {Function} props.onMapClick             - Called with Leaflet LatLng on click
  */
 export default function MapView({
   startPoint, endPoint, route, mode, activePin,
   altRoutes = [], detourWaypoint = null, waypoints = [], pois = {}, poisEnabled = {},
+  onPoisLoaded, onPoisLoadingChange, onPoiError,
+  transitEnabled = false, transitVisible = {}, onTransitRoutesLoaded,
   onMapClick, onRouteClick,
 }) {
   const defaultCenter = MAP_DEFAULT_CENTER
@@ -119,7 +133,19 @@ export default function MapView({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <ScaleControl position="bottomright" imperial={false} />
         <ClickHandler onMapClick={onMapClick} />
+        <PoiLayer
+          enabledTypes={route ? Object.entries(poisEnabled).filter(([, v]) => v).map(([k]) => k) : []}
+          onPoisLoaded={onPoisLoaded ?? (() => {})}
+          onLoadingChange={onPoisLoadingChange ?? (() => {})}
+          onError={onPoiError}
+        />
+        <TransitRoutesLayer
+          enabled={transitEnabled}
+          visible={transitVisible}
+          onRoutesLoaded={onTransitRoutesLoaded ?? (() => {})}
+        />
 
         {startPoint && <Marker position={startPoint} icon={startIcon}><Popup>Start</Popup></Marker>}
         {endPoint   && <Marker position={endPoint}   icon={endIcon}>  <Popup>End</Popup>  </Marker>}

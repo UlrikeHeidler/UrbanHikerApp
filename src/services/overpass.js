@@ -1,4 +1,51 @@
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
+// Public Overpass endpoints tried in order; on network error or rate-limit the
+// next one is attempted so a single overloaded server doesn't break the app.
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+]
+
+// 0 in test mode so retry delays don't slow down the test suite
+const RETRY_DELAY_MS = import.meta.env.MODE === 'test' ? 0 : 1500
+
+/**
+ * POST a query to Overpass, trying each endpoint in turn.
+ * On a 429 the same endpoint is retried once after RETRY_DELAY_MS before
+ * moving on. Network errors move straight to the next endpoint.
+ * Non-retriable HTTP errors (5xx etc.) are thrown immediately.
+ *
+ * @param {string} query - OverpassQL query string
+ * @returns {Promise<object>} Parsed JSON response body
+ * @throws {Error}
+ */
+async function overpassFetch(query) {
+  const opts = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `data=${encodeURIComponent(query)}`,
+  }
+  let rateLimited = false
+  for (const url of OVERPASS_ENDPOINTS) {
+    try {
+      let res = await fetch(url, opts)
+      if (res.status === 429) {
+        rateLimited = true
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS))
+        res = await fetch(url, opts)
+        if (res.status === 429) continue   // try next endpoint
+        rateLimited = false
+      }
+      if (!res.ok) throw new Error(`Overpass request failed (${res.status})`)
+      return res.json()
+    } catch (err) {
+      if (err.message.startsWith('Overpass request failed')) throw err
+      console.warn('[overpass] endpoint failed, trying next:', url, err.message)
+      // network error or rate-limit continuation — try next endpoint
+    }
+  }
+  if (rateLimited) throw new Error('Overpass rate limit reached — please wait a moment and try again')
+  throw new Error('Could not reach Overpass — check your connection and try again')
+}
 
 /**
  * @typedef {'bench' | 'water' | 'viewpoint' | 'bus_stop' | 'tram_stop' | 'subway'} PoiType
@@ -59,16 +106,7 @@ export async function fetchPois(bbox, types) {
   if (!filters) return { bench: [], water: [], viewpoint: [], bus_stop: [], tram_stop: [], subway: [] }
 
   const query = `[out:json][timeout:15];\n(\n${filters}\n);\nout body;`
-
-  const res = await fetch(OVERPASS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(query)}`,
-  })
-
-  if (!res.ok) throw new Error(`POI fetch failed (${res.status})`)
-
-  const data = await res.json()
+  const data = await overpassFetch(query)
   return categorise(data.elements ?? [], types)
 }
 
@@ -106,17 +144,74 @@ function categorise(elements, types) {
 export async function fetchStopRoutes(nodeId) {
   if (!Number.isInteger(nodeId) || nodeId <= 0) throw new Error('Invalid node id')
   const query = `[out:json][timeout:10];\nnode(${nodeId});\nrel["route"~"bus|tram|subway|light_rail"](bn);\nout tags;`
-  const res = await fetch(OVERPASS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(query)}`,
-  })
-  if (!res.ok) throw new Error(`Route fetch failed (${res.status})`)
-  const data = await res.json()
+  const data = await overpassFetch(query)
   return (data.elements ?? [])
     .map((el) => el.tags?.ref || el.tags?.name)
     .filter(Boolean)
     .sort()
+}
+
+/** Maps OSM route type to the matching stop color. */
+const TRANSIT_ROUTE_COLOR = {
+  bus:        '#f97316',
+  tram:       '#0d9488',
+  subway:     '#7c3aed',
+  light_rail: '#7c3aed',
+}
+
+/**
+ * @typedef {Object} TransitRoute
+ * @property {number}    id    - OSM relation id
+ * @property {string}    ref   - Route number / short name
+ * @property {string}    name  - Full route name
+ * @property {string}    type  - 'bus' | 'tram' | 'subway' | 'light_rail'
+ * @property {string}    color - Hex color matching the stop type
+ * @property {Array[][]} ways  - Array of [[lat, lng], …] polylines (one per OSM way)
+ */
+
+/**
+ * Fetch transit route polylines within a bounding box using the Overpass API.
+ * Returns one entry per OSM route relation; each entry carries the full geometry
+ * split into per-way arrays so Leaflet can render them individually.
+ *
+ * Only fetches when the map zoom is ≥ 12 to avoid oversized responses.
+ *
+ * @param {import('../utils/geo').BoundingBox} bbox
+ * @returns {Promise<TransitRoute[]>}
+ * @throws {Error} On network failure or non-200 response
+ */
+export async function fetchTransitRoutes(bbox) {
+  const { minLat, minLng, maxLat, maxLng } = bbox
+  const bboxStr = `${minLat},${minLng},${maxLat},${maxLng}`
+  const query = `[out:json][timeout:25];\nrel["route"~"bus|tram|subway|light_rail"](${bboxStr});\nout geom;`
+  const data = await overpassFetch(query)
+  return (data.elements ?? []).map(parseTransitRelation).filter(Boolean)
+}
+
+/**
+ * Parse an Overpass relation element into a TransitRoute, or return null
+ * if the element is not a supported transit route relation.
+ *
+ * @param {object} el - Raw Overpass element
+ * @returns {TransitRoute|null}
+ */
+function parseTransitRelation(el) {
+  if (el.type !== 'relation') return null
+  const type = el.tags?.route
+  if (!TRANSIT_ROUTE_COLOR[type]) return null
+  const ways = (el.members ?? [])
+    .filter((m) => m.type === 'way' && m.geometry?.length >= 2)
+    .map((m) => m.geometry.map((p) => [p.lat, p.lon]))
+  if (!ways.length) return null
+  const ref = el.tags?.ref ?? el.tags?.name ?? String(el.id)
+  return {
+    id: el.id,
+    ref,
+    name: el.tags?.name ?? ref,
+    type,
+    color: TRANSIT_ROUTE_COLOR[type],
+    ways,
+  }
 }
 
 /**

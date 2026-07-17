@@ -1,0 +1,76 @@
+.transit-controls {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #f8faff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+}
+
+.transit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.transit-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.transit-master-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 12px;
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.transit-master-btn.active {
+  background: #2563eb;
+  color: #fff;
+}
+.transit-master-btn:hover:not(.active) { background: #d1d5db; }
+
+.transit-empty {
+  font-size: 11px;
+  color: #6b7280;
+  margin: 4px 0 0;
+}
+
+.transit-route-list {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.transit-route-tag {
+  padding: 4px 9px;
+  border: 1.5px solid;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.transit-route-tag:hover { opacity: 0.85; }
+
+/* Permanent tooltip label on route polylines */
+.transit-route-label {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 1px 4px !important;
+  color: #1e293b !important;
+  border-radius: 3px !important;
+  white-space: nowrap !important;
+}
+.transit-route-label::before { display: none !important; }

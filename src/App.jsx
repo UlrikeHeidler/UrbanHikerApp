@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import MapView from './components/MapView'
 import Sidebar from './components/Sidebar'
 import { loadRoutes, saveRoute, deleteRoute } from './services/storage'
@@ -7,8 +7,6 @@ import { fetchSubRoute } from './services/routing'
 import { nearestCoordIndex, findLocalSegment, spliceSubRoute } from './utils/routeRefine'
 import { haversineDistance } from './utils/geo'
 import { reverseGeocode } from './services/geocoding'
-import { fetchPois } from './services/overpass'
-import { getBoundingBox } from './utils/geo'
 import './App.css'
 
 /** @typedef {'a-to-b' | 'loop'} RouteMode */
@@ -41,7 +39,10 @@ export default function App() {
   const [savedRoutes, setSavedRoutes]           = useState(() => loadRoutes())
   const [pois, setPois]                         = useState(DEFAULT_POIS)
   const [poisEnabled, setPoisEnabled]           = useState(_appDefaults.defaultPoiEnabled)
-  const [poisLoading, setPoisLoading]           = useState(false)
+  const [poisLoading, setPoisLoading]           = useState(false)  // viewport fetch in-flight
+  const [transitEnabled, setTransitEnabled]     = useState(false)
+  const [transitRoutes, setTransitRoutes]       = useState([])
+  const [transitVisible, setTransitVisible]     = useState({})
 
   async function resolveLabel(latlng, setLabel) {
     setLabel(null)
@@ -200,19 +201,32 @@ export default function App() {
     setPoisEnabled((prev) => ({ ...prev, [type]: !prev[type] }))
   }
 
-  async function handleLoadPois() {
-    if (!route?.length) return
-    setPoisLoading(true)
-    try {
-      const bbox = getBoundingBox(route)
-      const result = await fetchPois(bbox, ['bench', 'water', 'viewpoint', 'bus_stop', 'tram_stop', 'subway'])
-      setPois(result)
-    } catch (err) {
-      setError(`POI load failed: ${err.message}`)
-    } finally {
-      setPoisLoading(false)
-    }
+  const handleTransitRoutesLoaded = useCallback((routes) => {
+    setTransitRoutes(routes)
+    setTransitVisible((prev) => {
+      const next = { ...prev }
+      routes.forEach((r) => { if (next[r.id] === undefined) next[r.id] = false })
+      return next
+    })
+  }, [])
+
+  function handleToggleTransitRoute(id) {
+    setTransitVisible((prev) => ({ ...prev, [id]: !prev[id] }))
   }
+
+  const handlePoisLoaded = useCallback((incoming) => {
+    console.log('[App] handlePoisLoaded received:', Object.entries(incoming).map(([t, ns]) => `${t}:${ns.length}`).join(' '))
+    setPois((prev) => {
+      const next = { ...prev }
+      for (const [type, nodes] of Object.entries(incoming)) {
+        const seen = new Set((next[type] ?? []).map((n) => n.id))
+        const fresh = nodes.filter((n) => !seen.has(n.id))
+        if (fresh.length) next[type] = [...(next[type] ?? []), ...fresh]
+      }
+      console.log('[App] pois after merge:', Object.entries(next).map(([t, ns]) => `${t}:${ns.length}`).join(' '))
+      return next
+    })
+  }, [])
 
   return (
     <div className="app-layout">
@@ -238,7 +252,10 @@ export default function App() {
         onSaveRoute={handleSaveRoute} onLoadRoute={handleLoadRoute} onDeleteRoute={handleDeleteRoute}
         onDefaultStartChange={handleDefaultStartChange}
         poisEnabled={poisEnabled} onTogglePoi={handleTogglePoi}
-        onLoadPois={handleLoadPois} poisLoading={poisLoading}
+        poisLoading={poisLoading}
+        transitEnabled={transitEnabled} onToggleTransitEnabled={() => setTransitEnabled((v) => !v)}
+        transitRoutes={transitRoutes} transitVisible={transitVisible}
+        onToggleTransitRoute={handleToggleTransitRoute}
         onRouteClick={handleRouteClick}
       />
       <MapView
@@ -248,6 +265,10 @@ export default function App() {
         altRoutes={routeAlternatives.filter((_, i) => i !== selectedRouteIndex).map(r => r.coordinates)}
         detourWaypoint={detourWaypoint}
         pois={pois} poisEnabled={poisEnabled}
+        onPoisLoaded={handlePoisLoaded} onPoisLoadingChange={setPoisLoading}
+        onPoiError={(msg) => setError(`POI load failed: ${msg}`)}
+        transitEnabled={transitEnabled} transitVisible={transitVisible}
+        onTransitRoutesLoaded={handleTransitRoutesLoaded}
         onMapClick={handleMapClick}
         onRouteClick={handleRouteClick}
       />

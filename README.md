@@ -11,6 +11,7 @@ A personal web app for planning walking routes in cities — find a path from A 
 - **Routing preferences** — bias the route toward green areas (parks) or quieter streets
 - **Elevation profile** — visualise the height changes along your route
 - **POI overlay** — show nearby benches, drinking water points, viewpoints, bus stops, tram stops, and metro stations from OpenStreetMap; each toggle button is colour-coded to match its map marker; clicking a transit stop shows its routes
+- **Transit routes layer** — a separate map overlay that draws bus, tram, subway, and light-rail route lines for the current viewport in the same colours as the corresponding stop markers; route numbers are labelled directly on the lines; individual routes can be toggled on/off from the sidebar panel; the layer fetches automatically as you pan or zoom (zoom ≥ 12 required)
 - **GPX export** — download your route for use in any GPS device or app
 - **Save routes** — store favourite routes locally in your browser (no account needed)
 - **Settings panel** — configure default route mode, default loop distance, routing preference defaults, POI visibility defaults, default start point, and API key — all persisted in the browser; reset to base profile at any time

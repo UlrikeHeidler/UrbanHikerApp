@@ -32,6 +32,12 @@
 .poi-load-btn:hover:not(:disabled) { background: #1d4ed8; }
 .poi-load-btn:disabled { background: #93c5fd; cursor: not-allowed; }
 
+.poi-loading {
+  font-size: 11px;
+  color: #2563eb;
+  font-style: italic;
+}
+
 .poi-toggles { display: flex; gap: 5px; flex-wrap: wrap; }
 
 .poi-tag {
