@@ -12,8 +12,9 @@ import './DetourControls.css'
  * @param {Function} props.onMetersChange - Called with new target in metres
  * @param {boolean}  props.flip           - Whether the detour is flipped to the other side
  * @param {Function} props.onFlipChange   - Called with new flip boolean
+ * @param {number}   [props.walkingSpeedKmh] - Walking pace for duration → distance (km/h)
  */
-export default function DetourControls({ detourMeters, onMetersChange, flip, onFlipChange }) {
+export default function DetourControls({ detourMeters, onMetersChange, flip, onFlipChange, walkingSpeedKmh }) {
   const [enabled, setEnabled]     = useState(false)
   const [inputMode, setInputMode] = useState('distance')
   const [kmValue, setKmValue]     = useState('')
@@ -45,7 +46,7 @@ export default function DetourControls({ detourMeters, onMetersChange, flip, onF
     if (mode === 'distance') {
       onMetersChange(Math.round(parseFloat(km || 0) * 1000))
     } else {
-      onMetersChange(minutesToMeters(parseFloat(min || 0)))
+      onMetersChange(minutesToMeters(parseFloat(min || 0), walkingSpeedKmh))
     }
   }
 

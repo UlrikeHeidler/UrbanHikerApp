@@ -25,6 +25,9 @@ export const DEFAULT_POI_ENABLED = {
   bus_stop: false, tram_stop: false, subway: false,
 }
 
+/** Walking speed used for duration ↔ distance conversions (km/h). */
+export const DEFAULT_WALKING_SPEED_KMH = 5
+
 /**
  * Minimum main-road segment length (in feet) that triggers auto-refinement.
  * Converted to metres at the call site (1 ft = 0.3048 m).

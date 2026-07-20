@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { setApiKey, clearApiKey, hasApiKey } from '../services/apiKey'
 import { getDefaultStart, setDefaultStart, clearDefaultStart, getAppDefaults, setAppDefaults, resetAppDefaults } from '../services/settings'
-import { DEFAULT_PREFERENCES, DEFAULT_LOOP_KM, DEFAULT_LOOP_MINUTES, DEFAULT_LOOP_INPUT_MODE, DEFAULT_REFINE_MIN_FEET, DEFAULT_POI_ENABLED } from '../config/defaults'
+import { DEFAULT_PREFERENCES, DEFAULT_LOOP_KM, DEFAULT_LOOP_MINUTES, DEFAULT_LOOP_INPUT_MODE, DEFAULT_REFINE_MIN_FEET, DEFAULT_POI_ENABLED, DEFAULT_WALKING_SPEED_KMH } from '../config/defaults'
 import AddressSearch from './AddressSearch'
 import './AppSettings.css'
 
@@ -22,7 +22,7 @@ const POI_CONFIG = {
  * @param {string|null} props.currentStartLabel
  * @param {Function} props.onDefaultStartChange - Called after save or clear of default start
  */
-export default function AppSettings({ currentStart, currentStartLabel, onDefaultStartChange }) {
+export default function AppSettings({ currentStart, currentStartLabel, onDefaultStartChange, onAppDefaultsChange }) {
   const [open, setOpen]         = useState(false)
   const [tab, setTab]           = useState('start')
 
@@ -72,7 +72,7 @@ export default function AppSettings({ currentStart, currentStartLabel, onDefault
     setDfState((prev) => ({ ...prev, defaultPoiEnabled: { ...prev.defaultPoiEnabled, [type]: value } }))
   }
   function dfHandleSave() {
-    try { setAppDefaults(df); flash(setDfSaved) } catch { /* validation error — ignore */ }
+    try { setAppDefaults(df); flash(setDfSaved); onAppDefaultsChange?.() } catch { /* validation error — ignore */ }
   }
   function dfHandleReset() { resetAppDefaults(); setDfState(getAppDefaults()) }
 
@@ -208,6 +208,15 @@ export default function AppSettings({ currentStart, currentStartLabel, onDefault
                     value={df.defaultRefineMinFeet}
                     onChange={(e) => setDf('defaultRefineMinFeet', parseFloat(e.target.value) || DEFAULT_REFINE_MIN_FEET)} />
                   <span className="aset-unit">ft</span>
+                </div>
+              </div>
+              <div className="aset-row">
+                <label className="aset-label" htmlFor="aset-walk-speed">Walking pace</label>
+                <div className="aset-num-row">
+                  <input id="aset-walk-speed" type="number" className="aset-num" min="1" max="20" step="0.5"
+                    value={df.walkingSpeedKmh}
+                    onChange={(e) => setDf('walkingSpeedKmh', parseFloat(e.target.value) || DEFAULT_WALKING_SPEED_KMH)} />
+                  <span className="aset-unit">km/h</span>
                 </div>
               </div>
               <p className="aset-label aset-label--section">Default POI visibility</p>

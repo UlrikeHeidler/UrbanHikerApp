@@ -1,5 +1,4 @@
-/** Average walking speed used for duration ↔ distance conversions (m/s). */
-const WALKING_SPEED_MS = 5000 / 3600 // 5 km/h
+import { DEFAULT_WALKING_SPEED_KMH } from '../config/defaults'
 
 /**
  * Format a duration in seconds as a human-readable string.
@@ -26,12 +25,26 @@ export function formatDistance(meters) {
 }
 
 /**
- * Convert a walking duration in minutes to an approximate distance in metres,
- * using a fixed average walking speed of 5 km/h.
+ * Convert a walking duration in minutes to an approximate distance in metres.
  *
- * @param {number} minutes - Desired walk duration in minutes (positive)
+ * @param {number} minutes          - Desired walk duration in minutes (positive)
+ * @param {number} [walkingSpeedKmh=DEFAULT_WALKING_SPEED_KMH] - Walking speed in km/h
  * @returns {number} Approximate distance in metres
  */
-export function minutesToMeters(minutes) {
-  return Math.round(minutes * 60 * WALKING_SPEED_MS)
+export function minutesToMeters(minutes, walkingSpeedKmh = DEFAULT_WALKING_SPEED_KMH) {
+  const speedMs = (walkingSpeedKmh * 1000) / 3600
+  return Math.round(minutes * 60 * speedMs)
+}
+
+/**
+ * Convert a distance in metres to an estimated walk duration in seconds,
+ * using the configured walking speed.
+ *
+ * @param {number} meters           - Distance in metres
+ * @param {number} [walkingSpeedKmh=DEFAULT_WALKING_SPEED_KMH] - Walking speed in km/h
+ * @returns {number} Estimated duration in seconds
+ */
+export function metersToSeconds(meters, walkingSpeedKmh = DEFAULT_WALKING_SPEED_KMH) {
+  const speedMs = (walkingSpeedKmh * 1000) / 3600
+  return Math.round(meters / speedMs)
 }

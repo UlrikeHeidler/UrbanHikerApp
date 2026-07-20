@@ -39,7 +39,9 @@ export default function App() {
   const [savedRoutes, setSavedRoutes]           = useState(() => loadRoutes())
   const [pois, setPois]                         = useState(DEFAULT_POIS)
   const [poisEnabled, setPoisEnabled]           = useState(_appDefaults.defaultPoiEnabled)
+  const [walkingSpeedKmh, setWalkingSpeedKmh]   = useState(_appDefaults.walkingSpeedKmh)
   const [poisLoading, setPoisLoading]           = useState(false)  // viewport fetch in-flight
+  const [poiRequestId, setPoiRequestId]         = useState(0)
   const [transitEnabled, setTransitEnabled]     = useState(false)
   const [transitRoutes, setTransitRoutes]       = useState([])
   const [transitVisible, setTransitVisible]     = useState({})
@@ -130,7 +132,7 @@ export default function App() {
   function handleSaveRoute(name) {
     const entry = saveRoute({
       name, mode, startPoint, endPoint: endPoint ?? null,
-      loopMeters: null, loopSeed: null,
+      waypoints, loopMeters: null, loopSeed: null,
       coordinates: route, info: routeInfo,
       elevationProfile: elevationProfile ?? [],
     })
@@ -141,7 +143,7 @@ export default function App() {
     setMode(saved.mode)
     setStartPoint(saved.startPoint)
     setEndPoint(saved.endPoint ?? null)
-    setWaypoints([])
+    setWaypoints(saved.waypoints ?? [])
     setRoute(saved.coordinates)
     setRouteInfo(saved.info)
     setElevationProfile(saved.elevationProfile ?? null)
@@ -155,6 +157,11 @@ export default function App() {
     else setStartLabel(null)
     if (saved.endPoint) resolveLabel(saved.endPoint, setEndLabel)
     else setEndLabel(null)
+  }
+
+  function handleAppDefaultsChange() {
+    const updated = getAppDefaults()
+    setWalkingSpeedKmh(updated.walkingSpeedKmh)
   }
 
   function handleDefaultStartChange(newDefault) {
@@ -199,6 +206,10 @@ export default function App() {
 
   function handleTogglePoi(type) {
     setPoisEnabled((prev) => ({ ...prev, [type]: !prev[type] }))
+  }
+
+  function handleLoadPois() {
+    setPoiRequestId((id) => id + 1)
   }
 
   const handleTransitRoutesLoaded = useCallback((routes) => {
@@ -251,7 +262,9 @@ export default function App() {
         savedRoutes={savedRoutes}
         onSaveRoute={handleSaveRoute} onLoadRoute={handleLoadRoute} onDeleteRoute={handleDeleteRoute}
         onDefaultStartChange={handleDefaultStartChange}
-        poisEnabled={poisEnabled} onTogglePoi={handleTogglePoi}
+        onAppDefaultsChange={handleAppDefaultsChange}
+        walkingSpeedKmh={walkingSpeedKmh}
+        poisEnabled={poisEnabled} onTogglePoi={handleTogglePoi} onLoadPois={handleLoadPois}
         poisLoading={poisLoading}
         transitEnabled={transitEnabled} onToggleTransitEnabled={() => setTransitEnabled((v) => !v)}
         transitRoutes={transitRoutes} transitVisible={transitVisible}
@@ -264,7 +277,7 @@ export default function App() {
         activePin={activePin} waypoints={waypoints}
         altRoutes={routeAlternatives.filter((_, i) => i !== selectedRouteIndex).map(r => r.coordinates)}
         detourWaypoint={detourWaypoint}
-        pois={pois} poisEnabled={poisEnabled}
+        pois={pois} poisEnabled={poisEnabled} poiRequestId={poiRequestId}
         onPoisLoaded={handlePoisLoaded} onPoisLoadingChange={setPoisLoading}
         onPoiError={(msg) => setError(`POI load failed: ${msg}`)}
         transitEnabled={transitEnabled} transitVisible={transitVisible}

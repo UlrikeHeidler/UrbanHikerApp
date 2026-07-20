@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDuration, formatDistance, minutesToMeters } from './formatters'
+import { formatDuration, formatDistance, minutesToMeters, metersToSeconds } from './formatters'
 
 describe('formatDuration', () => {
   it('formats sub-hour durations as minutes', () => {
@@ -43,15 +43,15 @@ describe('formatDistance', () => {
 })
 
 describe('minutesToMeters', () => {
-  it('converts 60 minutes to 5000 m (5 km/h)', () => {
+  it('converts 60 minutes to 5000 m at default 5 km/h', () => {
     expect(minutesToMeters(60)).toBe(5000)
   })
 
-  it('converts 30 minutes to 2500 m', () => {
+  it('converts 30 minutes to 2500 m at default speed', () => {
     expect(minutesToMeters(30)).toBe(2500)
   })
 
-  it('converts 45 minutes to 3750 m', () => {
+  it('converts 45 minutes to 3750 m at default speed', () => {
     expect(minutesToMeters(45)).toBe(3750)
   })
 
@@ -59,8 +59,47 @@ describe('minutesToMeters', () => {
     expect(minutesToMeters(0)).toBe(0)
   })
 
-  it('handles non-integer minute values', () => {
+  it('handles non-integer minute values at default speed', () => {
     // 1.5 min * 60s * (5000/3600 m/s) = 125 m
     expect(minutesToMeters(1.5)).toBe(125)
+  })
+
+  it('uses the provided walkingSpeedKmh — slow pace 3 km/h', () => {
+    // 60 min * 60s * (3000/3600 m/s) = 3000 m
+    expect(minutesToMeters(60, 3)).toBe(3000)
+  })
+
+  it('uses the provided walkingSpeedKmh — brisk pace 6 km/h', () => {
+    // 60 min * 60s * (6000/3600 m/s) = 6000 m
+    expect(minutesToMeters(60, 6)).toBe(6000)
+  })
+
+  it('scales linearly with speed', () => {
+    expect(minutesToMeters(30, 4)).toBe(Math.round(30 * 60 * (4000 / 3600)))
+  })
+})
+
+describe('metersToSeconds', () => {
+  it('converts 5000 m to 3600 s at default 5 km/h', () => {
+    expect(metersToSeconds(5000)).toBe(3600)
+  })
+
+  it('converts 3000 m to 3600 s at 3 km/h (slow pace)', () => {
+    expect(metersToSeconds(3000, 3)).toBe(3600)
+  })
+
+  it('converts 6000 m to 3600 s at 6 km/h (brisk pace)', () => {
+    expect(metersToSeconds(6000, 6)).toBe(3600)
+  })
+
+  it('returns 0 for 0 metres', () => {
+    expect(metersToSeconds(0)).toBe(0)
+  })
+
+  it('is the inverse of minutesToMeters', () => {
+    const speed = 4
+    const minutes = 45
+    const meters = minutesToMeters(minutes, speed)
+    expect(metersToSeconds(meters, speed)).toBe(minutes * 60)
   })
 })

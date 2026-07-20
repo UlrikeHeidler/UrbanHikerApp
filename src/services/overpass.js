@@ -35,6 +35,11 @@ async function overpassFetch(query) {
         if (res.status === 429) continue   // try next endpoint
         rateLimited = false
       }
+      // Transient server errors — try the next endpoint instead of giving up
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        console.warn(`[overpass] ${res.status} from ${url}, trying next endpoint`)
+        continue
+      }
       if (!res.ok) throw new Error(`Overpass request failed (${res.status})`)
       return res.json()
     } catch (err) {

@@ -38,9 +38,10 @@ export default function Sidebar({
   setDetourWaypoint,
   isLoading, setIsLoading, error, setError,
   savedRoutes, onSaveRoute, onLoadRoute, onDeleteRoute,
-  onDefaultStartChange,
+  onDefaultStartChange, onAppDefaultsChange,
+  walkingSpeedKmh,
   onRouteClick,
-  poisEnabled, onTogglePoi, poisLoading,
+  poisEnabled, onTogglePoi, onLoadPois, poisLoading,
   transitEnabled, onToggleTransitEnabled, transitRoutes, transitVisible, onToggleTransitRoute,
 }) {
   const [loopMeters, setLoopMeters]     = useState(
@@ -195,6 +196,7 @@ export default function Sidebar({
               onMetersChange={setDetourMeters}
               flip={detourFlip}
               onFlipChange={setDetourFlip}
+              walkingSpeedKmh={walkingSpeedKmh}
             />
           </>
         )}
@@ -206,6 +208,7 @@ export default function Sidebar({
             initialKm={_appDefaults.defaultLoopKm}
             initialMinutes={_appDefaults.defaultLoopMinutes}
             initialInputMode={_appDefaults.defaultLoopInputMode}
+            walkingSpeedKmh={walkingSpeedKmh}
           />
         )}
 
@@ -245,11 +248,13 @@ export default function Sidebar({
         {routeInfo && (
           <RouteResultPanel
             routeInfo={routeInfo}
+            walkingSpeedKmh={walkingSpeedKmh}
             elevationProfile={elevationProfile}
             coordinates={route}
             onSaveRoute={onSaveRoute}
             poisEnabled={poisEnabled}
             onTogglePoi={onTogglePoi}
+            onLoadPois={onLoadPois}
             poisLoading={poisLoading}
           />
         )}
@@ -266,6 +271,7 @@ export default function Sidebar({
           currentStart={startPoint}
           currentStartLabel={startLabel}
           onDefaultStartChange={onDefaultStartChange}
+          onAppDefaultsChange={onAppDefaultsChange}
         />
         <SavedRoutes routes={savedRoutes} onLoad={onLoadRoute} onDelete={onDeleteRoute} />
       </div>

@@ -6,6 +6,7 @@ import {
   DEFAULT_LOOP_INPUT_MODE,
   DEFAULT_POI_ENABLED,
   DEFAULT_REFINE_MIN_FEET,
+  DEFAULT_WALKING_SPEED_KMH,
 } from '../config/defaults'
 
 const STORAGE_KEY = 'urban-hiker-settings'
@@ -30,6 +31,7 @@ const POI_KEYS = ['bench', 'water', 'viewpoint', 'bus_stop', 'tram_stop', 'subwa
  * @property {'distance'|'duration'} [defaultLoopInputMode]
  * @property {number}  [defaultRefineMinFeet] - Minimum main-road segment length in feet that triggers auto-refinement
  * @property {{ bench: boolean, water: boolean, viewpoint: boolean, bus_stop: boolean, tram_stop: boolean, subway: boolean }} [defaultPoiEnabled]
+ * @property {number}  [walkingSpeedKmh]      - Walking pace used for duration ↔ distance (1–20 km/h)
  */
 
 /**
@@ -121,6 +123,7 @@ export function getAppDefaults() {
       : DEFAULT_LOOP_INPUT_MODE,
     defaultRefineMinFeet: _validateRefineMinFeet(saved.defaultRefineMinFeet) ?? DEFAULT_REFINE_MIN_FEET,
     defaultPoiEnabled: _validatePoiEnabled(saved.defaultPoiEnabled) ?? { ...DEFAULT_POI_ENABLED },
+    walkingSpeedKmh: _validateWalkingSpeedKmh(saved.walkingSpeedKmh) ?? DEFAULT_WALKING_SPEED_KMH,
   }
 }
 
@@ -154,6 +157,9 @@ export function setAppDefaults(patch) {
   }
   if (patch.defaultPoiEnabled !== undefined && _validatePoiEnabled(patch.defaultPoiEnabled) === null) {
     throw new Error('Invalid defaultPoiEnabled')
+  }
+  if (patch.walkingSpeedKmh !== undefined && _validateWalkingSpeedKmh(patch.walkingSpeedKmh) === null) {
+    throw new Error(`Invalid walkingSpeedKmh: ${patch.walkingSpeedKmh}`)
   }
   const settings = loadSettings()
   settings.appDefaults = { ...(settings.appDefaults ?? {}), ...patch }
@@ -195,6 +201,12 @@ function _validateLoopMinutes(v) {
 /** @param {unknown} v @returns {number|null} */
 function _validateRefineMinFeet(v) {
   if (typeof v !== 'number' || v < 50 || v > 2640) return null
+  return v
+}
+
+/** @param {unknown} v @returns {number|null} */
+function _validateWalkingSpeedKmh(v) {
+  if (typeof v !== 'number' || v < 1 || v > 20) return null
   return v
 }
 

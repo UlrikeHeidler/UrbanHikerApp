@@ -18,8 +18,9 @@ import './LoopControls.css'
  * @param {number}   [props.initialKm]        - Initial km input value (from saved defaults)
  * @param {number}   [props.initialMinutes]   - Initial minutes input value (from saved defaults)
  * @param {LoopInputMode} [props.initialInputMode] - Initial tab selection
+ * @param {number}        [props.walkingSpeedKmh]  - Walking pace for duration → distance (km/h)
  */
-export default function LoopControls({ distanceMeters, onDistanceChange, seed, onSeedChange, initialKm, initialMinutes, initialInputMode }) {
+export default function LoopControls({ distanceMeters, onDistanceChange, seed, onSeedChange, initialKm, initialMinutes, initialInputMode, walkingSpeedKmh }) {
   const [inputMode, setInputMode] = useState(/** @type {LoopInputMode} */ (initialInputMode ?? DEFAULT_LOOP_INPUT_MODE))
   const [kmValue, setKmValue] = useState(String(initialKm ?? DEFAULT_LOOP_KM))
   const [minValue, setMinValue] = useState(String(initialMinutes ?? DEFAULT_LOOP_MINUTES))
@@ -31,7 +32,7 @@ export default function LoopControls({ distanceMeters, onDistanceChange, seed, o
       const meters = Math.round(parseFloat(kmValue || 0) * 1000)
       onDistanceChange(meters)
     } else {
-      onDistanceChange(minutesToMeters(parseFloat(minValue || 0)))
+      onDistanceChange(minutesToMeters(parseFloat(minValue || 0), walkingSpeedKmh))
     }
   }
 

@@ -35,30 +35,31 @@ const TRANSIT_TYPES = new Set(['bus_stop', 'tram_stop', 'subway'])
 
 /**
  * Popup for transit stops. Shows name, stop ref, and transit routes.
- * Routes are read from the OSM route_ref tag; if absent, fetched lazily
- * from Overpass when the popup opens.
+ * Routes are read from the OSM route_ref tag; if absent, fetched from
+ * Overpass only when `open` becomes true — never on initial mount.
  *
- * @param {{ node: import('../services/overpass').PoiNode, label: string }} props
+ * @param {{ node: import('../services/overpass').PoiNode, label: string, open: boolean }} props
  */
-function TransitPopup({ node, label }) {
+function TransitPopup({ node, label, open }) {
   const [routes, setRoutes] = useState(() =>
     node.routeRef ? node.routeRef.split(';').map((r) => r.trim()).filter(Boolean) : null
   )
   const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
-    if (routes !== null) return
+    if (!open) return        // do nothing until the user actually opens the popup
+    if (routes !== null) return  // already have data (from routeRef tag or prior fetch)
     fetchStopRoutes(node.id)
       .then(setRoutes)
       .catch((err) => { setRoutes([]); setLoadError(err.message) })
-  }, [node.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <span>
       <strong>{label}</strong>
       {node.name && <><br />{node.name}</>}
       {node.stopRef && <><br />Stop: {node.stopRef}</>}
-      {routes === null && <><br /><em>Loading lines…</em></>}
+      {routes === null && open && <><br /><em>Loading lines…</em></>}
       {routes?.length > 0 && <><br />Lines: {routes.join(', ')}</>}
       {loadError && <><br /><em style={{ color: '#b91c1c' }}>{loadError}</em></>}
     </span>
@@ -86,6 +87,34 @@ function ClickHandler({ onMapClick }) {
 }
 
 /**
+ * A single POI marker. Tracks whether its popup is open so TransitPopup
+ * can defer the Overpass fetch until the user actually clicks the stop.
+ *
+ * @param {{ node: import('../services/overpass').PoiNode, type: string }} props
+ */
+function TransitMarker({ node, type }) {
+  const [popupOpen, setPopupOpen] = useState(false)
+  const style = POI_STYLE[type]
+  return (
+    <CircleMarker
+      center={[node.lat, node.lon]}
+      radius={6}
+      pathOptions={{ color: style?.color, fillColor: style?.color, fillOpacity: 0.8 }}
+      eventHandlers={{
+        popupopen:  () => setPopupOpen(true),
+        popupclose: () => setPopupOpen(false),
+      }}
+    >
+      <Popup>
+        {TRANSIT_TYPES.has(type)
+          ? <TransitPopup node={node} label={style?.label} open={popupOpen} />
+          : `${style?.label}${node.name ? ` — ${node.name}` : ''}`}
+      </Popup>
+    </CircleMarker>
+  )
+}
+
+/**
  * Full-screen interactive map. Displays start/end/waypoint markers, the route
  * polyline, POI overlay, and forwards click events to the parent.
  *
@@ -100,7 +129,7 @@ function ClickHandler({ onMapClick }) {
  * @param {object}   props.detourWaypoint - Computed detour midpoint {lat,lng} or null
  * @param {object}   props.pois                  - { bench: PoiNode[], … }
  * @param {object}   props.poisEnabled            - { bench: boolean, … }
- * @param {object}   props.poisEnabled            - { bench: boolean, … }
+ * @param {number}   props.poiRequestId           - Increment to trigger a manual POI fetch
  * @param {Function} props.onPoisLoaded           - Called with PoiResult for the current viewport
  * @param {Function} props.onPoisLoadingChange    - Called with boolean while a fetch is in-flight
  * @param {boolean}  props.transitEnabled         - Show transit routes layer
@@ -110,7 +139,7 @@ function ClickHandler({ onMapClick }) {
  */
 export default function MapView({
   startPoint, endPoint, route, mode, activePin,
-  altRoutes = [], detourWaypoint = null, waypoints = [], pois = {}, poisEnabled = {},
+  altRoutes = [], detourWaypoint = null, waypoints = [], pois = {}, poisEnabled = {}, poiRequestId = 0,
   onPoisLoaded, onPoisLoadingChange, onPoiError,
   transitEnabled = false, transitVisible = {}, onTransitRoutesLoaded,
   onMapClick, onRouteClick,
@@ -137,6 +166,7 @@ export default function MapView({
         <ClickHandler onMapClick={onMapClick} />
         <PoiLayer
           enabledTypes={route ? Object.entries(poisEnabled).filter(([, v]) => v).map(([k]) => k) : []}
+          requestId={poiRequestId}
           onPoisLoaded={onPoisLoaded ?? (() => {})}
           onLoadingChange={onPoisLoadingChange ?? (() => {})}
           onError={onPoiError}
@@ -177,18 +207,11 @@ export default function MapView({
         {Object.entries(pois).map(([type, nodes]) =>
           poisEnabled[type]
             ? nodes.map((node) => (
-                <CircleMarker
+                <TransitMarker
                   key={node.id}
-                  center={[node.lat, node.lon]}
-                  radius={6}
-                  pathOptions={{ color: POI_STYLE[type]?.color, fillColor: POI_STYLE[type]?.color, fillOpacity: 0.8 }}
-                >
-                  <Popup>
-                    {TRANSIT_TYPES.has(type)
-                      ? <TransitPopup node={node} label={POI_STYLE[type]?.label} />
-                      : `${POI_STYLE[type]?.label}${node.name ? ` — ${node.name}` : ''}`}
-                  </Popup>
-                </CircleMarker>
+                  node={node}
+                  type={type}
+                />
               ))
             : null
         )}

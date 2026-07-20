@@ -1,4 +1,4 @@
-import { formatDistance, formatDuration } from '../utils/formatters'
+import { formatDistance, formatDuration, metersToSeconds } from '../utils/formatters'
 import './RouteInfo.css'
 
 /**
@@ -7,8 +7,13 @@ import './RouteInfo.css'
  *
  * @param {object} props
  * @param {import('../services/routing').RouteInfo} props.info
+ * @param {number} [props.walkingSpeedKmh] - User-configured pace; overrides ORS duration
  */
-export default function RouteInfo({ info }) {
+export default function RouteInfo({ info, walkingSpeedKmh }) {
+  const displaySeconds = walkingSpeedKmh != null
+    ? metersToSeconds(info.distance, walkingSpeedKmh)
+    : info.duration
+
   return (
     <div className="route-info">
       <h2 className="route-info-title">Walking Route</h2>
@@ -23,7 +28,7 @@ export default function RouteInfo({ info }) {
         <div className="stat">
           <span className="stat-icon">⏱</span>
           <div>
-            <div className="stat-value">{formatDuration(info.duration)}</div>
+            <div className="stat-value">{formatDuration(displaySeconds)}</div>
             <div className="stat-label">Est. Walk Time</div>
           </div>
         </div>

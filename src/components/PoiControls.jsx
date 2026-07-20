@@ -11,20 +11,30 @@ const POI_CONFIG = {
 }
 
 /**
- * Toggle panel for POI overlay types. Enabling a type immediately triggers
- * a viewport fetch via the PoiLayer component in MapView.
+ * Toggle panel for POI overlay types.
+ * POIs are only fetched when the user clicks "Load area" — there is no
+ * automatic fetch on pan/zoom.
  *
  * @param {object}   props
  * @param {{ bench: boolean, water: boolean, viewpoint: boolean, bus_stop: boolean, tram_stop: boolean, subway: boolean }} props.enabled
- * @param {Function} props.onToggle   - Called with a PoiType string to toggle visibility
- * @param {boolean}  props.isLoading  - True while a viewport fetch is in progress
+ * @param {Function} props.onToggle    - Called with a PoiType string to toggle visibility
+ * @param {Function} props.onLoadPois  - Called when the user wants to fetch POIs for the current viewport
+ * @param {boolean}  props.isLoading   - True while a viewport fetch is in progress
  */
-export default function PoiControls({ enabled, onToggle, isLoading }) {
+export default function PoiControls({ enabled, onToggle, onLoadPois, isLoading }) {
+  const anyEnabled = Object.values(enabled).some(Boolean)
   return (
     <div className="poi-controls">
       <div className="poi-header">
         <span className="poi-title">Nearby POIs</span>
-        {isLoading && <span className="poi-loading">Loading…</span>}
+        <button
+          className="poi-load-btn"
+          onClick={onLoadPois}
+          disabled={isLoading || !anyEnabled}
+          title={anyEnabled ? 'Load POIs for the visible map area' : 'Enable at least one POI type first'}
+        >
+          {isLoading ? 'Loading…' : '↻ Load area'}
+        </button>
       </div>
       <div className="poi-toggles">
         {Object.entries(POI_CONFIG).map(([type, { label, color }]) => (

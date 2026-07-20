@@ -12,17 +12,19 @@ import './RouteResultPanel.css'
  *
  * @param {object}   props
  * @param {object}   props.routeInfo
+ * @param {number}   [props.walkingSpeedKmh]  - User-configured pace for Est. Walk Time display
  * @param {Array}    props.elevationProfile
  * @param {Array}    props.coordinates        - Route coordinates for GPX export
  * @param {Function} props.onSaveRoute        - Called with route name string
  * @param {{ bench: boolean, … }} props.poisEnabled
  * @param {Function} props.onTogglePoi  - Called with PoiType string
+ * @param {Function} props.onLoadPois  - Called to trigger a POI fetch for the current viewport
  * @param {boolean}  props.poisLoading  - True while a viewport fetch is in-flight
  */
 export default function RouteResultPanel({
-  routeInfo, elevationProfile, coordinates,
+  routeInfo, walkingSpeedKmh, elevationProfile, coordinates,
   onSaveRoute,
-  poisEnabled, onTogglePoi, poisLoading,
+  poisEnabled, onTogglePoi, onLoadPois, poisLoading,
 }) {
   const [isSaved, setIsSaved] = useState(false)
 
@@ -38,7 +40,7 @@ export default function RouteResultPanel({
 
   return (
     <div className="route-result-panel">
-      <RouteInfo info={routeInfo} />
+      <RouteInfo info={routeInfo} walkingSpeedKmh={walkingSpeedKmh} />
       <ElevationProfile profile={elevationProfile} />
 
       <div className="result-actions">
@@ -51,6 +53,7 @@ export default function RouteResultPanel({
       <PoiControls
         enabled={poisEnabled}
         onToggle={onTogglePoi}
+        onLoadPois={onLoadPois}
         isLoading={poisLoading}
       />
     </div>
