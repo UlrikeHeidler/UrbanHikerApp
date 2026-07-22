@@ -97,7 +97,7 @@ function TransitPopup({ node, label, open }) {
  */
 function makeColorIcon(color) {
   return new L.Icon({
-    iconUrl: `/markers/marker-icon-2x-${color}.png`,
+    iconUrl: `${import.meta.env.BASE_URL}markers/marker-icon-2x-${color}.png`,
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
     iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
   })
