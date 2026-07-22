@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { setApiKey, clearApiKey, hasApiKey } from '../services/apiKey'
 import { getDefaultStart, setDefaultStart, clearDefaultStart, getAppDefaults, setAppDefaults, resetAppDefaults } from '../services/settings'
-import { DEFAULT_PREFERENCES, DEFAULT_LOOP_KM, DEFAULT_LOOP_MINUTES, DEFAULT_LOOP_INPUT_MODE, DEFAULT_REFINE_MIN_FEET, DEFAULT_POI_ENABLED, DEFAULT_WALKING_SPEED_KMH } from '../config/defaults'
+import { DEFAULT_PREFERENCES, DEFAULT_LOOP_KM, DEFAULT_LOOP_MINUTES, DEFAULT_LOOP_INPUT_MODE, DEFAULT_REFINE_MIN_FEET, DEFAULT_POI_ENABLED, DEFAULT_WALKING_SPEED_KMH, DEFAULT_API_TRACKING_ENABLED } from '../config/defaults'
 import AddressSearch from './AddressSearch'
 import './AppSettings.css'
 
@@ -230,6 +230,12 @@ export default function AppSettings({ currentStart, currentStartLabel, onDefault
                   </label>
                 ))}
               </div>
+              <p className="aset-label aset-label--section">Tracking</p>
+              <label className="aset-check-row">
+                <input type="checkbox" checked={df.apiTrackingEnabled ?? DEFAULT_API_TRACKING_ENABLED}
+                  onChange={(e) => setDf('apiTrackingEnabled', e.target.checked)} />
+                Track API usage (ORS / Nominatim / Overpass)
+              </label>
               {dfSaved && <p className="aset-saved">Saved!</p>}
               <div className="aset-actions">
                 <button className="btn btn-primary btn-sm" onClick={dfHandleSave}>Save defaults</button>

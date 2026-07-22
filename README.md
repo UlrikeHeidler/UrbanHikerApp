@@ -14,6 +14,7 @@ A personal web app for planning walking routes in cities — find a path from A 
 - **Transit routes layer** — a separate map overlay that draws bus, tram, subway, and light-rail route lines for the current viewport in the same colours as the corresponding stop markers; route numbers are labelled directly on the lines; individual routes can be toggled on/off from the sidebar panel; the layer fetches automatically as you pan or zoom (zoom ≥ 12 required)
 - **GPX export** — download your route for use in any GPS device or app
 - **Save routes** — store favourite routes locally in your browser (no account needed)
+- **API usage tracker** — the 📊 button in the sidebar footer opens a popup with call counts, success rates, a 7-day bar chart, and today's usage vs the free-tier daily limits (ORS 2 000 / Nominatim 500 / Overpass 10 000); data is kept for 7 days and can be cleared instantly; tracking can be turned off in Settings → Defaults
 - **Settings panel** — configure default route mode, default loop distance, routing preference defaults, POI visibility defaults, default start point, and API key — all persisted in the browser; reset to base profile at any time
 - **PWA** — install it on your phone's home screen or desktop for offline-capable use
 

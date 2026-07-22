@@ -1,3 +1,5 @@
+import { recordCall } from './apiTracker'
+
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org'
 
 /**
@@ -63,8 +65,12 @@ export async function searchAddress(query) {
     },
   })
 
-  if (!res.ok) throw new Error(`Address search failed (${res.status})`)
+  if (!res.ok) {
+    recordCall('nominatim', false)
+    throw new Error(`Address search failed (${res.status})`)
+  }
 
+  recordCall('nominatim', true)
   return res.json()
 }
 
@@ -94,10 +100,12 @@ export async function reverseGeocode(lat, lng) {
         'User-Agent': 'UrbanHikingApp/1.0',
       },
     })
-    if (!res.ok) return ''
+    if (!res.ok) { recordCall('nominatim', false); return '' }
     const data = await res.json()
+    recordCall('nominatim', true)
     return formatReverseResult(data)
   } catch {
+    recordCall('nominatim', false)
     return ''
   }
 }

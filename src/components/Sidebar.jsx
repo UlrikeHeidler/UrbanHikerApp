@@ -44,6 +44,8 @@ export default function Sidebar({
   onRouteClick,
   poisEnabled, onTogglePoi, onLoadPois, poisLoading,
   transitEnabled, onToggleTransitEnabled, transitRoutes, transitVisible, onToggleTransitRoute,
+  onOpenApiUsage,
+  onOpenAbout,
 }) {
   const [loopMeters, setLoopMeters]     = useState(
     _appDefaults.defaultLoopInputMode === 'duration'
@@ -162,7 +164,15 @@ export default function Sidebar({
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <span className="sidebar-logo">🥾</span>
+        <img
+          src="/UrbanHiker.png" alt="Urban Hiker"
+          className="sidebar-logo sidebar-logo--btn"
+          onClick={onOpenAbout}
+          title="About Urban Hiker"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && onOpenAbout()}
+        />
         <h1 className="sidebar-title">Urban Hiker</h1>
       </div>
 
@@ -299,8 +309,13 @@ export default function Sidebar({
       </div>
 
       <div className="sidebar-footer">
-        Map data © <a href="https://www.openstreetmap.org" target="_blank" rel="noreferrer">OpenStreetMap</a>
-        {' '}· Routing © <a href="https://openrouteservice.org" target="_blank" rel="noreferrer">ORS</a>
+        <span>
+          Map © <a href="https://www.openstreetmap.org" target="_blank" rel="noreferrer">OSM</a>
+          {' '}· Routing © <a href="https://openrouteservice.org" target="_blank" rel="noreferrer">ORS</a>
+        </span>
+        <button className="api-usage-btn" onClick={onOpenApiUsage} title="View API usage statistics">
+          📊 API Usage
+        </button>
       </div>
     </aside>
   )

@@ -34,5 +34,8 @@ export const DEFAULT_WALKING_SPEED_KMH = 5
  */
 export const DEFAULT_REFINE_MIN_FEET = 400
 
+/** Whether API call tracking is on by default. */
+export const DEFAULT_API_TRACKING_ENABLED = true
+
 /** Fallback map centre when no default start point is set. */
 export const MAP_DEFAULT_CENTER = [38.8737, -77.2311]

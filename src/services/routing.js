@@ -1,5 +1,6 @@
 import { buildElevationProfile, stitchElevationProfiles } from '../utils/geo'
 import { getApiKey } from './apiKey'
+import { recordCall } from './apiTracker'
 
 const ORS_BASE = 'https://api.openrouteservice.org/v2'
 
@@ -139,10 +140,12 @@ async function postDirections(apiKey, body) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
+    recordCall('ors', false)
     throw new Error(err?.error?.message || `Routing failed (${res.status})`)
   }
 
   const data = await res.json()
+  recordCall('ors', true)
   return data.features.map(parseFeature)
 }
 

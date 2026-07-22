@@ -1,0 +1,158 @@
+.about-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+.about-modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* ── Header ── */
+.about-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.about-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.about-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 2px;
+}
+
+.about-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.about-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+.about-close:hover { background: #f3f4f6; color: #374151; }
+
+/* ── Sections ── */
+.about-section {
+  margin-bottom: 18px;
+}
+
+.about-section h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.about-section p {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0 0 8px;
+}
+.about-section p:last-child { margin-bottom: 0; }
+
+/* ── How-to steps ── */
+.about-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.about-steps li {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+/* ── Credits ── */
+.about-credits {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.about-credits li {
+  font-size: 12px;
+  color: #4b5563;
+  padding-left: 12px;
+  position: relative;
+  line-height: 1.5;
+}
+.about-credits li::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: #9ca3af;
+}
+
+.about-credits a, .about-section a {
+  color: #2563eb;
+  text-decoration: none;
+}
+.about-credits a:hover, .about-section a:hover { text-decoration: underline; }
+
+.about-note {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ── License ── */
+.about-license {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 0;
+}
+
+.about-disclaimer {
+  font-size: 12px;
+  color: #6b7280;
+  background: #fef9c3;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  margin-top: 10px;
+}

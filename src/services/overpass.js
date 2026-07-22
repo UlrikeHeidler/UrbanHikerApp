@@ -1,3 +1,5 @@
+import { recordCall } from './apiTracker'
+
 // Public Overpass endpoints tried in order; on network error or rate-limit the
 // next one is attempted so a single overloaded server doesn't break the app.
 const OVERPASS_ENDPOINTS = [
@@ -41,6 +43,7 @@ async function overpassFetch(query) {
         continue
       }
       if (!res.ok) throw new Error(`Overpass request failed (${res.status})`)
+      recordCall('overpass', true)
       return res.json()
     } catch (err) {
       if (err.message.startsWith('Overpass request failed')) throw err
@@ -48,6 +51,7 @@ async function overpassFetch(query) {
       // network error or rate-limit continuation — try next endpoint
     }
   }
+  recordCall('overpass', false)
   if (rateLimited) throw new Error('Overpass rate limit reached — please wait a moment and try again')
   throw new Error('Could not reach Overpass — check your connection and try again')
 }

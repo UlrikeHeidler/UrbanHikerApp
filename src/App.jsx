@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react'
 import MapView from './components/MapView'
 import Sidebar from './components/Sidebar'
+import ApiUsageModal from './components/ApiUsageModal'
+import AboutModal from './components/AboutModal'
 import { loadRoutes, saveRoute, deleteRoute } from './services/storage'
 import { getDefaultStart, getAppDefaults } from './services/settings'
 import { fetchSubRoute } from './services/routing'
@@ -46,6 +48,8 @@ export default function App() {
   const [transitEnabled, setTransitEnabled]     = useState(false)
   const [transitRoutes, setTransitRoutes]       = useState([])
   const [transitVisible, setTransitVisible]     = useState({})
+  const [apiUsageOpen, setApiUsageOpen]         = useState(false)
+  const [aboutOpen, setAboutOpen]               = useState(false)
 
   async function resolveLabel(latlng, setLabel) {
     setLabel(null)
@@ -281,6 +285,8 @@ export default function App() {
 
   return (
     <div className="app-layout">
+      {aboutOpen    && <AboutModal    onClose={() => setAboutOpen(false)} />}
+      {apiUsageOpen && <ApiUsageModal onClose={() => setApiUsageOpen(false)} />}
       <Sidebar
         mode={mode} onModeChange={handleModeChange}
         startPoint={startPoint} endPoint={endPoint}
@@ -310,6 +316,8 @@ export default function App() {
         transitRoutes={transitRoutes} transitVisible={transitVisible}
         onToggleTransitRoute={handleToggleTransitRoute}
         onRouteClick={handleRouteClick}
+        onOpenApiUsage={() => setApiUsageOpen(true)}
+        onOpenAbout={() => setAboutOpen(true)}
       />
       <MapView
         startPoint={startPoint} endPoint={endPoint}
