@@ -8,6 +8,13 @@ import { MAP_DEFAULT_CENTER } from '../config/defaults'
 import TransitRoutesLayer from './TransitRoutesLayer'
 import PoiLayer from './PoiLayer'
 
+// CVE note: Leaflet ≤1.9.4 has an XSS vector in bindPopup(htmlString). This file
+// never calls bindPopup() directly — all popups use react-leaflet's <Popup> JSX
+// component, which renders children via a React portal (DOM node, not HTML string).
+// React escapes all string content, so external data (OSM names, route refs, etc.)
+// is never treated as HTML. Do NOT introduce direct L.bindPopup(string) calls with
+// untrusted content until an upstream patch is available.
+
 // Fix Leaflet's default icon path issue with Vite
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
