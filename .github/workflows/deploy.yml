@@ -32,12 +32,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Configure Pages
-        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
-          
       - name: Build
         # VITE_BASE sets the asset base path to /<repo-name>/ so all paths
         # resolve correctly when served from GitHub Pages.
@@ -60,6 +54,3 @@ jobs:
       - name: Deploy to GitHub Pages GH
         id: deploy
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public

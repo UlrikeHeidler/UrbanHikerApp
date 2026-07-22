@@ -165,7 +165,7 @@ export default function Sidebar({
     <aside className="sidebar">
       <div className="sidebar-header">
         <img
-          src="/UrbanHiker.png" alt="Urban Hiker"
+          src={`${import.meta.env.BASE_URL}UrbanHiker.png`} alt="Urban Hiker"
           className="sidebar-logo sidebar-logo--btn"
           onClick={onOpenAbout}
           title="About Urban Hiker"

@@ -12,7 +12,7 @@ export default function AboutModal({ onClose }) {
       <div className="about-modal">
 
         <div className="about-header">
-          <img src="/UrbanHiker.png" alt="Urban Hiker" className="about-logo" />
+          <img src={`${import.meta.env.BASE_URL}UrbanHiker.png`} alt="Urban Hiker" className="about-logo" />
           <div>
             <h2 className="about-title">Urban Hiker</h2>
             <p className="about-subtitle">Personal walking-route planner for urban areas</p>
