@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { haversineDistance, buildElevationProfile, getBoundingBox } from './geo'
+import { haversineDistance, buildElevationProfile, getBoundingBox, stitchElevationProfiles } from './geo'
 
 // ---------------------------------------------------------------------------
 // haversineDistance
@@ -111,5 +111,48 @@ describe('getBoundingBox', () => {
     const box = getBoundingBox(coords)
     expect(box.minLat).toBeCloseTo(-33.90)
     expect(box.maxLat).toBeCloseTo(-33.87)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// stitchElevationProfiles
+// ---------------------------------------------------------------------------
+
+describe('stitchElevationProfiles', () => {
+  const p1 = [
+    { distanceM: 0,    elevationM: 10 },
+    { distanceM: 500,  elevationM: 20 },
+    { distanceM: 1000, elevationM: 15 },
+  ]
+  const p2 = [
+    { distanceM: 0,   elevationM: 15 },
+    { distanceM: 400, elevationM: 25 },
+    { distanceM: 800, elevationM: 12 },
+  ]
+
+  it('returns profile2 when profile1 is empty', () => {
+    expect(stitchElevationProfiles([], p2)).toEqual(p2)
+  })
+
+  it('returns profile1 when profile2 is empty', () => {
+    expect(stitchElevationProfiles(p1, [])).toEqual(p1)
+  })
+
+  it('offsets profile2 distances by the end of profile1', () => {
+    const result = stitchElevationProfiles(p1, p2)
+    expect(result[result.length - 2].distanceM).toBe(1400) // 1000 + 400
+    expect(result[result.length - 1].distanceM).toBe(1800) // 1000 + 800
+  })
+
+  it('deduplicates the junction point', () => {
+    const result = stitchElevationProfiles(p1, p2)
+    expect(result).toHaveLength(p1.length + p2.length - 1)
+  })
+
+  it('preserves elevation values from both profiles', () => {
+    const result = stitchElevationProfiles(p1, p2)
+    expect(result[0].elevationM).toBe(10)
+    expect(result[p1.length - 1].elevationM).toBe(15)
+    expect(result[result.length - 1].elevationM).toBe(12)
   })
 })

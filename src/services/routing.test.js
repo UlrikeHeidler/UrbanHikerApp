@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchRoute, fetchLoopRoute, fetchSubRoute } from './routing'
+import { fetchRoute, fetchLoopRoute, fetchSubRoute, fetchLoopWithWaypoints } from './routing'
 
 const START = { lat: 52.52, lng: 13.405 }
 const END   = { lat: 52.53, lng: 13.42  }
@@ -388,5 +388,80 @@ describe('fetchSubRoute — unit', () => {
   it('throws when ORS cannot find a highway-free path', async () => {
     mockFetch(404, { error: { message: 'Unable to find a route' } })
     await expect(fetchSubRoute(START, END)).rejects.toThrow('Unable to find a route')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// fetchLoopWithWaypoints — unit
+// ---------------------------------------------------------------------------
+
+const WP1 = { lat: 52.525, lng: 13.41 }
+
+describe('fetchLoopWithWaypoints — unit', () => {
+  beforeEach(() => { setApiKey('test-api-key') })
+
+  it('makes exactly two fetch calls (outbound + return)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve(makeOrsResponse()),
+    })
+    await fetchLoopWithWaypoints(START, [WP1])
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('stitches coordinates from both legs (deduplicates junction)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve(makeOrsResponse()),
+    })
+    const result = await fetchLoopWithWaypoints(START, [WP1])
+    // Each leg has 3 coords; junction is deduplicated → 3 + 2 = 5
+    expect(result.coordinates).toHaveLength(5)
+  })
+
+  it('sums distance and duration from both legs', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(makeOrsResponse({ distance: 1200, duration: 900 })) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(makeOrsResponse({ distance: 800,  duration: 600 })) })
+    const result = await fetchLoopWithWaypoints(START, [WP1])
+    expect(result.info.distance).toBe(2000)
+    expect(result.info.duration).toBe(1500)
+  })
+
+  it('sums ascent and descent from both legs', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(makeOrsResponse({ ascent: 30, descent: 20 })) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(makeOrsResponse({ ascent: 10, descent: 15 })) })
+    const result = await fetchLoopWithWaypoints(START, [WP1])
+    expect(result.info.ascent).toBe(40)
+    expect(result.info.descent).toBe(35)
+  })
+
+  it('exposes outboundDistance from the first leg only', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(makeOrsResponse({ distance: 1200 })) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(makeOrsResponse({ distance: 800  })) })
+    const result = await fetchLoopWithWaypoints(START, [WP1])
+    expect(result.outboundDistance).toBe(1200)
+  })
+
+  it('passes intermediate waypoints only to the outbound leg', async () => {
+    const WP2 = { lat: 52.528, lng: 13.415 }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve(makeOrsResponse()),
+    })
+    await fetchLoopWithWaypoints(START, [WP1, WP2])
+    const outboundBody = JSON.parse(fetch.mock.calls[0][1].body)
+    // Outbound: start + WP1 (intermediate) + WP2 (end) = 3 coords
+    expect(outboundBody.coordinates).toHaveLength(3)
+    const returnBody = JSON.parse(fetch.mock.calls[1][1].body)
+    // Return: WP2 (start) + START (end) = 2 coords, no intermediates
+    expect(returnBody.coordinates).toHaveLength(2)
+  })
+
+  it('throws when API key is missing', async () => {
+    setApiKey(undefined)
+    await expect(fetchLoopWithWaypoints(START, [WP1])).rejects.toThrow('No ORS API key found')
   })
 })

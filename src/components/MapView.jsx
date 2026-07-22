@@ -16,10 +16,25 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
-const startIcon    = makeColorIcon('green')
-const endIcon      = makeColorIcon('red')
-const waypointIcon = makeColorIcon('violet')
-const detourIcon   = makeColorIcon('orange')
+const startIcon  = makeColorIcon('green')
+const endIcon    = makeColorIcon('red')
+const detourIcon = makeColorIcon('orange')
+
+/**
+ * Create a numbered Leaflet DivIcon for a waypoint pin.
+ *
+ * @param {number} n - 1-based waypoint number
+ * @returns {L.DivIcon}
+ */
+function makeNumberedWaypointIcon(n) {
+  return L.divIcon({
+    html: `<div class="waypoint-pin-body"><span>${n}</span></div>`,
+    className: 'waypoint-pin',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+  })
+}
 
 /** @type {Record<string, { color: string, label: string }>} */
 const POI_STYLE = {
@@ -181,7 +196,7 @@ export default function MapView({
         {endPoint   && <Marker position={endPoint}   icon={endIcon}>  <Popup>End</Popup>  </Marker>}
 
         {waypoints.map((wp, i) => (
-          <Marker key={i} position={wp} icon={waypointIcon}>
+          <Marker key={i} position={wp} icon={makeNumberedWaypointIcon(i + 1)}>
             <Popup>Waypoint {i + 1}</Popup>
           </Marker>
         ))}

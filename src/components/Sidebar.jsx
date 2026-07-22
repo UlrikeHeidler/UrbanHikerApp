@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import AddressSearch from './AddressSearch'
 import ModeToggle from './ModeToggle'
 import LoopControls from './LoopControls'
@@ -10,9 +10,10 @@ import DetourControls from './DetourControls'
 import SavedRoutes from './SavedRoutes'
 import AppSettings from './AppSettings'
 import TransitControls from './TransitControls'
-import { fetchRoute, fetchLoopRoute, fetchSubRoute } from '../services/routing'
+import { fetchRoute, fetchLoopRoute, fetchSubRoute, fetchLoopWithWaypoints } from '../services/routing'
 import { minutesToMeters } from '../utils/formatters'
-import { findMainRoadSegments, spliceSubRoute } from '../utils/routeRefine'
+import { findMainRoadSegments, spliceSubRoute, nearestCoordIndex } from '../utils/routeRefine'
+import { computeSegmentStats } from '../utils/segmentStats'
 import { haversineDistance } from '../utils/geo'
 import { computeDetourWaypoint } from '../utils/detour'
 import { getAppDefaults } from '../services/settings'
@@ -28,7 +29,7 @@ const _appDefaults = getAppDefaults()
  */
 export default function Sidebar({
   mode, onModeChange,
-  startPoint, endPoint, startLabel, endLabel, waypoints, onRemoveWaypoint,
+  startPoint, endPoint, startLabel, endLabel, waypoints, waypointLabels = [], onRemoveWaypoint,
   activePin, setActivePin, onSetPoint, onClear,
   preferences, onPreferencesChange,
   route, setRoute, routeWayTypes, setRouteWayTypes, routeInfo, setRouteInfo,
@@ -141,6 +142,20 @@ export default function Sidebar({
     }
   }
 
+  const segmentStats = useMemo(() => {
+    if (!route || !routeInfo || !waypoints.length) return []
+    const boundaries = [{ ...startPoint, label: 'Start' }]
+    waypoints.forEach((wp, i) => boundaries.push({ ...wp, label: `Waypoint ${i + 1}` }))
+    if (mode === 'loop') {
+      boundaries.push({ ...startPoint, label: 'Start (return)' })
+    } else if (endPoint) {
+      boundaries.push({ ...endPoint, label: 'End' })
+    } else {
+      return []
+    }
+    return computeSegmentStats(route, routeInfo.duration, boundaries)
+  }, [route, routeInfo, startPoint, endPoint, waypoints, mode])
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -186,6 +201,7 @@ export default function Sidebar({
 
             <WaypointList
               waypoints={waypoints}
+              waypointLabels={waypointLabels}
               isAdding={activePin === 'waypoint'}
               onStartAdd={() => setActivePin('waypoint')}
               onRemove={onRemoveWaypoint}
@@ -251,6 +267,7 @@ export default function Sidebar({
             walkingSpeedKmh={walkingSpeedKmh}
             elevationProfile={elevationProfile}
             coordinates={route}
+            segments={segmentStats}
             onSaveRoute={onSaveRoute}
             poisEnabled={poisEnabled}
             onTogglePoi={onTogglePoi}

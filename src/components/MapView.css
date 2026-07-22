@@ -9,6 +9,35 @@
   width: 100%;
 }
 
+.waypoint-pin {
+  width: 25px;
+  height: 41px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.waypoint-pin-body {
+  width: 25px;
+  height: 41px;
+  background: #7c3aed;
+  border: 2px solid white;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.waypoint-pin-body span {
+  transform: rotate(45deg);
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 1;
+}
+
 .map-hint {
   position: absolute;
   top: 12px;

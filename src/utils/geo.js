@@ -60,6 +60,25 @@ export function getBoundingBox(coordinates) {
   return { minLat, minLng, maxLat, maxLng }
 }
 
+/**
+ * Concatenate two elevation profiles into a single continuous profile.
+ * The second profile's cumulative distances are offset by the end of the first.
+ * The junction point (last of profile1 / first of profile2) is deduplicated.
+ *
+ * @param {ElevationPoint[]} profile1
+ * @param {ElevationPoint[]} profile2
+ * @returns {ElevationPoint[]}
+ */
+export function stitchElevationProfiles(profile1, profile2) {
+  if (!profile1.length) return profile2
+  if (!profile2.length) return profile1
+  const offset = profile1[profile1.length - 1].distanceM
+  return [
+    ...profile1,
+    ...profile2.slice(1).map((p) => ({ distanceM: p.distanceM + offset, elevationM: p.elevationM })),
+  ]
+}
+
 export function buildElevationProfile(rawCoords) {
   if (!rawCoords?.length || rawCoords[0].length < 3) return []
 

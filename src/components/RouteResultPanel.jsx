@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import RouteInfo from './RouteInfo'
 import ElevationProfile from './ElevationProfile'
+import SegmentBreakdown from './SegmentBreakdown'
 import SaveRouteForm from './SaveRouteForm'
 import PoiControls from './PoiControls'
 import { downloadGpx } from '../utils/gpx'
@@ -15,6 +16,7 @@ import './RouteResultPanel.css'
  * @param {number}   [props.walkingSpeedKmh]  - User-configured pace for Est. Walk Time display
  * @param {Array}    props.elevationProfile
  * @param {Array}    props.coordinates        - Route coordinates for GPX export
+ * @param {import('../utils/segmentStats').SegmentStat[]} [props.segments] - Per-segment stats; omit for no breakdown
  * @param {Function} props.onSaveRoute        - Called with route name string
  * @param {{ bench: boolean, … }} props.poisEnabled
  * @param {Function} props.onTogglePoi  - Called with PoiType string
@@ -23,6 +25,7 @@ import './RouteResultPanel.css'
  */
 export default function RouteResultPanel({
   routeInfo, walkingSpeedKmh, elevationProfile, coordinates,
+  segments,
   onSaveRoute,
   poisEnabled, onTogglePoi, onLoadPois, poisLoading,
 }) {
@@ -41,6 +44,7 @@ export default function RouteResultPanel({
   return (
     <div className="route-result-panel">
       <RouteInfo info={routeInfo} walkingSpeedKmh={walkingSpeedKmh} />
+      {segments?.length > 0 && <SegmentBreakdown segments={segments} />}
       <ElevationProfile profile={elevationProfile} />
 
       <div className="result-actions">

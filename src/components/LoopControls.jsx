@@ -19,8 +19,9 @@ import './LoopControls.css'
  * @param {number}   [props.initialMinutes]   - Initial minutes input value (from saved defaults)
  * @param {LoopInputMode} [props.initialInputMode] - Initial tab selection
  * @param {number}        [props.walkingSpeedKmh]  - Walking pace for duration → distance (km/h)
+ * @param {boolean}       [props.showSeed=true]    - When false, hides the route variation slider (irrelevant when waypoints are set)
  */
-export default function LoopControls({ distanceMeters, onDistanceChange, seed, onSeedChange, initialKm, initialMinutes, initialInputMode, walkingSpeedKmh }) {
+export default function LoopControls({ distanceMeters, onDistanceChange, seed, onSeedChange, initialKm, initialMinutes, initialInputMode, walkingSpeedKmh, showSeed = true }) {
   const [inputMode, setInputMode] = useState(/** @type {LoopInputMode} */ (initialInputMode ?? DEFAULT_LOOP_INPUT_MODE))
   const [kmValue, setKmValue] = useState(String(initialKm ?? DEFAULT_LOOP_KM))
   const [minValue, setMinValue] = useState(String(initialMinutes ?? DEFAULT_LOOP_MINUTES))
@@ -100,23 +101,25 @@ export default function LoopControls({ distanceMeters, onDistanceChange, seed, o
         </div>
       )}
 
-      <div className="loop-field">
-        <label className="loop-label" htmlFor="loop-seed">
-          Route variation
-          <span className="loop-hint"> (change to get a different loop)</span>
-        </label>
-        <input
-          id="loop-seed"
-          type="range"
-          className="loop-slider"
-          min="0"
-          max="9"
-          step="1"
-          value={seed}
-          onChange={(e) => onSeedChange(parseInt(e.target.value, 10))}
-        />
-        <div className="loop-seed-value">{seed + 1} / 10</div>
-      </div>
+      {showSeed && (
+        <div className="loop-field">
+          <label className="loop-label" htmlFor="loop-seed">
+            Route variation
+            <span className="loop-hint"> (change to get a different loop)</span>
+          </label>
+          <input
+            id="loop-seed"
+            type="range"
+            className="loop-slider"
+            min="0"
+            max="9"
+            step="1"
+            value={seed}
+            onChange={(e) => onSeedChange(parseInt(e.target.value, 10))}
+          />
+          <div className="loop-seed-value">{seed + 1} / 10</div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { buildElevationProfile } from '../utils/geo'
+import { buildElevationProfile, stitchElevationProfiles } from '../utils/geo'
 import { getApiKey } from './apiKey'
 
 const ORS_BASE = 'https://api.openrouteservice.org/v2'
@@ -187,6 +187,55 @@ export async function fetchLoopRoute(start, distanceMeters, seed = 0, options = 
   }
   const results = await postDirections(apiKey, body)
   return results[0]
+}
+
+/**
+ * @typedef {RouteResult & { outboundDistance: number }} LoopWithWaypointsResult
+ */
+
+/**
+ * Fetch a loop route that passes through forced waypoints and returns home via
+ * a separately routed path — avoiding retracing the outbound leg.
+ *
+ * Strategy: two independent ORS calls.
+ *   Leg 1 (outbound): start → wp1 → … → wpN  (forced waypoints)
+ *   Leg 2 (return):   wpN  → start           (ORS finds its own shortest path)
+ * The two polylines are stitched into one continuous route.
+ *
+ * The returned `outboundDistance` (metres) lets callers warn the user when
+ * the waypoints alone exceed their target distance.
+ *
+ * @param {LatLng}       start          - Loop origin and destination
+ * @param {LatLng[]}     waypoints      - One or more forced stops (in order)
+ * @param {RouteOptions} [options={}]   - Optional routing preferences
+ * @returns {Promise<LoopWithWaypointsResult>}
+ * @throws {Error} When either leg fails or the API key is missing
+ */
+export async function fetchLoopWithWaypoints(start, waypoints, options = {}) {
+  const lastWp = waypoints[waypoints.length - 1]
+  const intermediates = waypoints.slice(0, -1)
+
+  const [[outbound], [returnLeg]] = await Promise.all([
+    fetchRoute(start, lastWp, { ...options, waypoints: intermediates }),
+    fetchRoute(lastWp, start, options),
+  ])
+
+  const coordinates = [...outbound.coordinates, ...returnLeg.coordinates.slice(1)]
+  const wayTypes    = [...outbound.wayTypes,    ...returnLeg.wayTypes.slice(1)]
+  const elevationProfile = stitchElevationProfiles(outbound.elevationProfile, returnLeg.elevationProfile)
+
+  return {
+    coordinates,
+    wayTypes,
+    elevationProfile,
+    info: {
+      distance: outbound.info.distance + returnLeg.info.distance,
+      duration: outbound.info.duration + returnLeg.info.duration,
+      ascent:   (outbound.info.ascent  ?? 0) + (returnLeg.info.ascent  ?? 0),
+      descent:  (outbound.info.descent ?? 0) + (returnLeg.info.descent ?? 0),
+    },
+    outboundDistance: outbound.info.distance,
+  }
 }
 
 /**

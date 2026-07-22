@@ -32,8 +32,9 @@ export default function App() {
   const [routeAlternatives, setRouteAlternatives] = useState([])
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0)
   const [detourWaypoint, setDetourWaypoint] = useState(null)
-  const [startLabel, setStartLabel] = useState(() => getDefaultStart()?.label ?? null)
-  const [endLabel, setEndLabel]     = useState(null)
+  const [startLabel, setStartLabel]       = useState(() => getDefaultStart()?.label ?? null)
+  const [endLabel, setEndLabel]           = useState(null)
+  const [waypointLabels, setWaypointLabels] = useState([])
   const [isLoading, setIsLoading]               = useState(false)
   const [error, setError]                       = useState(null)
   const [savedRoutes, setSavedRoutes]           = useState(() => loadRoutes())
@@ -76,6 +77,14 @@ export default function App() {
   function handleMapClick(latlng) {
     if (activePin === 'waypoint') {
       setWaypoints((prev) => [...prev, { lat: latlng.lat, lng: latlng.lng }])
+      setWaypointLabels((prev) => [...prev, null])
+      reverseGeocode(latlng.lat, latlng.lng).then((label) =>
+        setWaypointLabels((prev) => {
+          const next = [...prev]
+          next[next.length - 1] = label
+          return next
+        })
+      )
       // stay in waypoint mode so multiple waypoints can be added
       return
     }
@@ -112,6 +121,7 @@ export default function App() {
     setEndPoint(null)
     setEndLabel(null)
     setWaypoints([])
+    setWaypointLabels([])
     setActivePin('start')
     clearRoute()
   }
@@ -121,12 +131,14 @@ export default function App() {
     setEndPoint(null)
     setEndLabel(null)
     setWaypoints([])
+    setWaypointLabels([])
     setActivePin('start')
     clearRoute()
   }
 
   function handleRemoveWaypoint(index) {
     setWaypoints((prev) => prev.filter((_, i) => i !== index))
+    setWaypointLabels((prev) => prev.filter((_, i) => i !== index))
   }
 
   function handleSaveRoute(name) {
@@ -157,6 +169,13 @@ export default function App() {
     else setStartLabel(null)
     if (saved.endPoint) resolveLabel(saved.endPoint, setEndLabel)
     else setEndLabel(null)
+    const wps = saved.waypoints ?? []
+    setWaypointLabels(wps.map(() => null))
+    wps.forEach((wp, i) =>
+      reverseGeocode(wp.lat, wp.lng).then((label) =>
+        setWaypointLabels((prev) => { const next = [...prev]; next[i] = label; return next })
+      )
+    )
   }
 
   function handleAppDefaultsChange() {
@@ -245,7 +264,7 @@ export default function App() {
         mode={mode} onModeChange={handleModeChange}
         startPoint={startPoint} endPoint={endPoint}
         startLabel={startLabel} endLabel={endLabel}
-        waypoints={waypoints} onRemoveWaypoint={handleRemoveWaypoint}
+        waypoints={waypoints} waypointLabels={waypointLabels} onRemoveWaypoint={handleRemoveWaypoint}
         activePin={activePin} setActivePin={setActivePin}
         onSetPoint={handleSetPoint} onClear={handleClear}
         preferences={preferences} onPreferencesChange={setPreferences}
