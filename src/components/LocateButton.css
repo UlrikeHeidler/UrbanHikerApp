@@ -1,0 +1,59 @@
+.locate-btn-container {
+  margin-bottom: 30px;
+  margin-right: 10px;
+}
+
+.locate-btn {
+  width: 34px;
+  height: 34px;
+  background: white;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.locate-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #2563eb;
+}
+
+.locate-btn--locating {
+  color: #2563eb;
+  animation: spin 1s linear infinite;
+}
+
+.locate-btn--error {
+  color: #dc2626;
+}
+
+.locate-btn:disabled {
+  cursor: default;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.locate-btn__error {
+  position: absolute;
+  right: 44px;
+  bottom: 0;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 12px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  max-width: 200px;
+  pointer-events: none;
+}

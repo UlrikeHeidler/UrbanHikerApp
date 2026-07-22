@@ -18,11 +18,20 @@ const ORS_BASE = 'https://api.openrouteservice.org/v2'
  */
 
 /**
+ * @typedef {Object} RouteStep
+ * @property {string} instruction - Human-readable step text from ORS
+ * @property {number} distanceM   - Step distance in metres
+ * @property {number} durationS   - Step duration in seconds
+ * @property {number} type        - ORS step type (0=left,1=right,6=straight,10=arrive,11=depart…)
+ */
+
+/**
  * @typedef {Object} RouteResult
  * @property {[number, number][]} coordinates - Ordered [lat, lng] pairs for the polyline
  * @property {RouteInfo} info - Summary statistics for the route
  * @property {import('../utils/geo').ElevationPoint[]} elevationProfile - Elevation chart data
  * @property {number[]} wayTypes - Per-coordinate ORS waytype values (0=unknown,1=state road,2=road,3=street,4=path,5=track,6=cycleway,7=footway,8=steps). Same length as coordinates.
+ * @property {RouteStep[]} instructions - Turn-by-turn navigation steps
  */
 
 /**
@@ -68,10 +77,19 @@ function parseFeature(feature) {
   // ORS returns [lng, lat, elevation?] — convert to Leaflet-style [lat, lng]
   const coordinates = raw.map(([lng, lat]) => [lat, lng])
   const waytypeValues = feature.properties.extras?.waytype?.values
+  const instructions = (feature.properties.segments ?? [])
+    .flatMap((seg) => seg.steps ?? [])
+    .map((step) => ({
+      instruction: step.instruction ?? '',
+      distanceM:   step.distance   ?? 0,
+      durationS:   step.duration   ?? 0,
+      type:        step.type       ?? 6,
+    }))
   return {
     coordinates,
     wayTypes: expandWayTypes(waytypeValues, coordinates.length),
     elevationProfile: buildElevationProfile(raw),
+    instructions,
     info: {
       distance: summary.distance,
       duration: summary.duration,
@@ -149,7 +167,7 @@ export async function fetchRoute(start, end, options = {}) {
   const body = {
     coordinates,
     elevation: true,
-    instructions: false,
+    instructions: true,
     extra_info: ['waytype'],
     // ORS rejects alternative_routes when waypoints are present (coords > 2)
     ...(coordinates.length === 2 ? { alternative_routes: { target_count: 3, share_factor: 0.6, weight_factor: 1.4 } } : {}),
@@ -178,7 +196,7 @@ export async function fetchLoopRoute(start, distanceMeters, seed = 0, options = 
   const body = {
     coordinates: [[start.lng, start.lat]],
     elevation: true,
-    instructions: false,
+    instructions: true,
     extra_info: ['waytype'],
     options: {
       round_trip: { length: distanceMeters, points: 3, seed },
@@ -252,7 +270,7 @@ export async function fetchSubRoute(start, end) {
   const body = {
     coordinates: [[start.lng, start.lat], [end.lng, end.lat]],
     elevation: true,
-    instructions: false,
+    instructions: true,
     extra_info: ['waytype'],
     options: { avoid_features: ['highways'] },
   }

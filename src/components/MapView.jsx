@@ -7,6 +7,7 @@ import { fetchStopRoutes } from '../services/overpass'
 import { MAP_DEFAULT_CENTER } from '../config/defaults'
 import TransitRoutesLayer from './TransitRoutesLayer'
 import PoiLayer from './PoiLayer'
+import LocateButton from './LocateButton'
 
 // CVE note: Leaflet ≤1.9.4 has an XSS vector in bindPopup(htmlString). This file
 // never calls bindPopup() directly — all popups use react-leaflet's <Popup> JSX
@@ -158,13 +159,14 @@ function TransitMarker({ node, type }) {
  * @param {object}   props.transitVisible         - { [routeId]: boolean }
  * @param {Function} props.onTransitRoutesLoaded  - Called with TransitRoute[] after each viewport fetch
  * @param {Function} props.onMapClick             - Called with Leaflet LatLng on click
+ * @param {Function} [props.onLocate]             - Called with {lat,lng} when GPS fix is obtained
  */
 export default function MapView({
   startPoint, endPoint, route, mode, activePin,
   altRoutes = [], detourWaypoint = null, waypoints = [], pois = {}, poisEnabled = {}, poiRequestId = 0,
   onPoisLoaded, onPoisLoadingChange, onPoiError,
   transitEnabled = false, transitVisible = {}, onTransitRoutesLoaded,
-  onMapClick, onRouteClick,
+  onMapClick, onRouteClick, onLocate,
 }) {
   const defaultCenter = MAP_DEFAULT_CENTER
 
@@ -185,6 +187,7 @@ export default function MapView({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ScaleControl position="bottomright" imperial={false} />
+        <LocateButton onLocate={onLocate} />
         <ClickHandler onMapClick={onMapClick} />
         <PoiLayer
           enabledTypes={route ? Object.entries(poisEnabled).filter(([, v]) => v).map(([k]) => k) : []}

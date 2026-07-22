@@ -141,6 +141,27 @@ export default function App() {
     setWaypointLabels((prev) => prev.filter((_, i) => i !== index))
   }
 
+  function handleReorderWaypoints(from, to) {
+    setWaypoints((prev) => {
+      const next = [...prev]
+      const [item] = next.splice(from, 1)
+      next.splice(to, 0, item)
+      return next
+    })
+    setWaypointLabels((prev) => {
+      const next = [...prev]
+      const [item] = next.splice(from, 1)
+      next.splice(to, 0, item)
+      return next
+    })
+  }
+
+  function handleLocate(latlng) {
+    setStartPoint(latlng)
+    resolveLabel(latlng, setStartLabel)
+    clearRoute()
+  }
+
   function handleSaveRoute(name) {
     const entry = saveRoute({
       name, mode, startPoint, endPoint: endPoint ?? null,
@@ -264,7 +285,7 @@ export default function App() {
         mode={mode} onModeChange={handleModeChange}
         startPoint={startPoint} endPoint={endPoint}
         startLabel={startLabel} endLabel={endLabel}
-        waypoints={waypoints} waypointLabels={waypointLabels} onRemoveWaypoint={handleRemoveWaypoint}
+        waypoints={waypoints} waypointLabels={waypointLabels} onRemoveWaypoint={handleRemoveWaypoint} onReorderWaypoints={handleReorderWaypoints}
         activePin={activePin} setActivePin={setActivePin}
         onSetPoint={handleSetPoint} onClear={handleClear}
         preferences={preferences} onPreferencesChange={setPreferences}
@@ -303,6 +324,7 @@ export default function App() {
         onTransitRoutesLoaded={handleTransitRoutesLoaded}
         onMapClick={handleMapClick}
         onRouteClick={handleRouteClick}
+        onLocate={handleLocate}
       />
     </div>
   )

@@ -1,0 +1,70 @@
+.instruction-list {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.instruction-list__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-align: left;
+}
+
+.instruction-list__toggle:hover {
+  background: #f3f4f6;
+}
+
+.instruction-list__count {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.instruction-list__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.instruction-list__step {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: start;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.instruction-list__step:first-child {
+  border-top: none;
+}
+
+.instruction-list__icon {
+  font-size: 14px;
+  text-align: center;
+  color: #2563eb;
+  line-height: 1.4;
+}
+
+.instruction-list__text {
+  color: #374151;
+  line-height: 1.4;
+}
+
+.instruction-list__meta {
+  color: #9ca3af;
+  white-space: nowrap;
+  line-height: 1.4;
+}

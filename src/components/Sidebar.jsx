@@ -29,7 +29,7 @@ const _appDefaults = getAppDefaults()
  */
 export default function Sidebar({
   mode, onModeChange,
-  startPoint, endPoint, startLabel, endLabel, waypoints, waypointLabels = [], onRemoveWaypoint,
+  startPoint, endPoint, startLabel, endLabel, waypoints, waypointLabels = [], onRemoveWaypoint, onReorderWaypoints,
   activePin, setActivePin, onSetPoint, onClear,
   preferences, onPreferencesChange,
   route, setRoute, routeWayTypes, setRouteWayTypes, routeInfo, setRouteInfo,
@@ -54,6 +54,7 @@ export default function Sidebar({
   const [detourMeters, setDetourMeters] = useState(0)
   const [detourFlip, setDetourFlip]     = useState(false)
   const [refinedCount, setRefinedCount] = useState(0)
+  const [instructions, setInstructions] = useState([])
 
   const canRoute = mode === 'loop'
     ? Boolean(startPoint) && loopMeters > 0
@@ -109,6 +110,7 @@ export default function Sidebar({
         setRouteWayTypes(wayTypes)
         setRouteInfo(result.info)
         setElevationProfile(result.elevationProfile)
+        setInstructions(result.instructions ?? [])
       } else {
         const detourWp = computeDetourWaypoint(startPoint, endPoint, detourMeters, detourFlip)
         setDetourWaypoint(detourWp)
@@ -134,6 +136,7 @@ export default function Sidebar({
         setRouteWayTypes(wayTypes)
         setRouteInfo(results[0].info)
         setElevationProfile(results[0].elevationProfile)
+        setInstructions(results[0].instructions ?? [])
       }
     } catch (err) {
       setError(err.message)
@@ -205,6 +208,7 @@ export default function Sidebar({
               isAdding={activePin === 'waypoint'}
               onStartAdd={() => setActivePin('waypoint')}
               onRemove={onRemoveWaypoint}
+              onReorder={onReorderWaypoints}
             />
 
             <DetourControls
@@ -268,6 +272,7 @@ export default function Sidebar({
             elevationProfile={elevationProfile}
             coordinates={route}
             segments={segmentStats}
+            instructions={instructions}
             onSaveRoute={onSaveRoute}
             poisEnabled={poisEnabled}
             onTogglePoi={onTogglePoi}

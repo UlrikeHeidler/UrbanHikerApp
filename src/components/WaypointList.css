@@ -63,6 +63,17 @@
   flex-shrink: 0;
 }
 
+.waypoint-drag {
+  cursor: grab;
+  color: #d1d5db;
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+  touch-action: none;
+}
+.waypoint-drag:hover { color: #9ca3af; }
+.waypoint-drag:active { cursor: grabbing; }
+
 .waypoint-coord { flex: 1; color: #4b5563; font-family: monospace; }
 
 .waypoint-remove {
