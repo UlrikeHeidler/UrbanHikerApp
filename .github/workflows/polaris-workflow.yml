@@ -36,6 +36,9 @@ jobs:
           ### SCANNING: Required fields
           polaris_server_url: ${{ vars.POLARIS_URL }}
           polaris_access_token: ${{ secrets.POLARIS_ACCESS_TOKEN }}
+          ### Explicit Polaris mappings
+          polaris_application_name: "${{ github.repository }}"
+          polaris_project_name: "${{ github.event.repository.name }}"
           ### ASSESSMENT TYPES
           polaris_assessment_types: SAST,SCA  # Comma-separated list: SAST,SCA,DAST
           ### SCANNING: Optional fields
